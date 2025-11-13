@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <title>Solicitud de Materiales</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,49 +19,23 @@
       border-radius: 12px;
       box-shadow: 0 0 15px rgba(0,0,0,0.15);
     }
-    h2, h3 {
-      text-align: center;
-      margin-bottom: 15px;
-    }
+    h2, h3 { text-align: center; margin-bottom: 15px; }
     label { font-weight: bold; display: block; margin-top: 10px; }
     input, select {
-      width: 100%;
-      padding: 10px;
-      font-size: 15px;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      border-radius: 6px;
-      border: 1px solid #aaa;
-      box-sizing: border-box;
+      width: 100%; padding: 10px; font-size: 15px; margin-top: 5px; margin-bottom: 15px;
+      border-radius: 6px; border: 1px solid #aaa; box-sizing: border-box;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 10px; }
     th {
-      background: #007bff;
-      color: white;
-      text-align: center;
+      background: #007bff; color: white; text-align: center;
     }
     td input {
-      width: 100%;
-      padding: 7px;
-      font-size: 14px;
-      box-sizing: border-box;
+      width: 100%; padding: 7px; font-size: 14px; box-sizing: border-box;
     }
     .btnAdd, .btnRemove, .btnEnviar, .btnVolver {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 10px;
+      width: 100%; padding: 12px; border: none; border-radius: 6px;
+      font-size: 16px; cursor: pointer; margin-top: 10px;
     }
     .btnAdd { background: #17a2b8; color: white; }
     .btnRemove { background: #dc3545; color: white; }
@@ -133,10 +105,16 @@
   <button class="btnVolver" onclick="location.href='menu.html'">Volver</button>
 </div>
 
+<!-- Librería y conexión a Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+
 <script>
+/* ----------- VALIDAR SESIÓN ----------- */
 const user = JSON.parse(localStorage.getItem("currentUser"));
 if (!user) window.location.href = "index.html";
 
+/* ----------- AGREGAR FILA ----------- */
 function addRow() {
   const tr = document.createElement("tr");
   tr.innerHTML = `
@@ -146,70 +124,54 @@ function addRow() {
   document.getElementById("tbody").appendChild(tr);
 }
 
+/* ----------- ELIMINAR ÚLTIMA FILA ----------- */
 function removeRow() {
   const tbody = document.getElementById("tbody");
   if (tbody.rows.length > 1) tbody.deleteRow(tbody.rows.length - 1);
   else alert("Debe haber al menos un material.");
 }
 
+/* ----------- ENVIAR SOLICITUD ----------- */
 async function enviar() {
   const docente = document.getElementById("docente").value;
   const asignatura = document.getElementById("asignatura").value.trim();
+  const fecha = new Date().toISOString().split("T")[0];
+  const estado = "Pendiente";
 
-  if (!docente) return alert("Seleccione un docente.");
-  if (!asignatura) return alert("Ingrese la asignatura.");
+  if (!docente || !asignatura) return alert("Complete los campos requeridos.");
 
   const filas = document.querySelectorAll("#tbody tr");
   const materiales = [];
-
   filas.forEach(f => {
-    const material = f.children[0].querySelector("input").value.trim();
+    const nombre = f.children[0].querySelector("input").value.trim();
     const cantidad = f.children[1].querySelector("input").value.trim();
-    if (material && cantidad) materiales.push({ material, cantidad });
+    if (nombre && cantidad) materiales.push({ nombre, cantidad });
   });
 
   if (materiales.length === 0) return alert("Debe ingresar al menos un material.");
 
-  const fecha = new Date().toISOString().split('T')[0];
+  // Crear la solicitud
+  const { data: solicitud, error: errSolicitud } = await supabaseClient
+    .from("solicitudes")
+    .insert([{ email: user.email, docente, asignatura, fecha, estado }])
+    .select();
 
-  try {
-    // Insertar solicitud principal
-    const { data: solicitud, error: errorSolicitud } = await supabaseClient
-      .from("solicitudes")
-      .insert([{
-        email: user.email,
-        docente,
-        asignatura,
-        fecha,
-        estado: "Pendiente"
-      }])
-      .select("id")
-      .single();
+  if (errSolicitud) return alert("Error al guardar solicitud: " + errSolicitud.message);
 
-    if (errorSolicitud) throw errorSolicitud;
+  const solicitudId = solicitud[0].id;
 
-    // Insertar materiales asociados
-    const materialesData = materiales.map(m => ({
-      id_solicitud: solicitud.id,
-      material: m.material,
-      cantidad: m.cantidad
-    }));
-
-    const { error: errorMateriales } = await supabaseClient
+  // Insertar materiales relacionados
+  for (const m of materiales) {
+    const { error: errMat } = await supabaseClient
       .from("materiales_solicitados")
-      .insert(materialesData);
-
-    if (errorMateriales) throw errorMateriales;
-
-    alert("✅ Solicitud enviada correctamente.");
-    location.href = "menu.html";
-
-  } catch (err) {
-    console.error(err);
-    alert("❌ Error al enviar la solicitud.");
+      .insert([{ id_solicitud: solicitudId, material: m.nombre, cantidad: m.cantidad }]);
+    if (errMat) console.error("Error insertando material:", errMat.message);
   }
+
+  alert("✅ Solicitud enviada con éxito.");
+  location.href = "menu.html";
 }
 </script>
-
 </body>
 </html>
+
