@@ -1,63 +1,32 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Solicitud de Materiales - Inicio</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            background: #f5f5f5; 
-            margin: 0; 
-            padding: 20px;
-        }
-        .box {
-            background: white;
-            padding: 20px;
-            max-width: 450px;
-            margin: 20px auto;
-            border-radius: 12px;
-            box-shadow: 0 0 12px rgba(0,0,0,0.15);
-        }
-        h2, h3 { text-align: center; margin-bottom: 15px; }
-        label { font-weight: bold; display: block; margin-top: 10px; }
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0 15px;
-            border-radius: 7px;
-            border: 1px solid #aaa;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 7px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        button:hover { opacity: 0.9; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .hidden { display: none; }
-        a { color: #007bff; cursor: pointer; text-decoration: underline; }
-        .error { color: red; font-size: 14px; margin-bottom: 10px; }
-        ul { padding-left: 18px; margin-top: -5px; }
-    </style>
+<meta charset="UTF-8">
+<title>Solicitud de Materiales - Inicio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+.box { background: white; padding: 20px; max-width: 450px; margin: 20px auto; border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.15); }
+h2,h3 { text-align:center; margin-bottom:15px; }
+label { font-weight:bold; display:block; margin-top:10px; }
+input, select { width:100%; padding:12px; margin:8px 0 15px; border-radius:7px; border:1px solid #aaa; font-size:16px; box-sizing:border-box; }
+button { width:100%; padding:12px; border:none; border-radius:7px; font-size:16px; cursor:pointer; margin-top:10px; }
+button:hover { opacity:0.9; }
+.btn-primary { background: #007bff; color:white; }
+.btn-success { background:#28a745; color:white; }
+.btn-secondary { background:#6c757d; color:white; }
+.hidden { display:none; }
+a { color:#007bff; cursor:pointer; text-decoration:underline; }
+.error { color:red; font-size:14px; margin-bottom:10px; }
+ul { padding-left:18px; margin-top:-5px; }
+</style>
 </head>
 <body>
 
 <!-- BIENVENIDA -->
 <div class="box" id="welcomeBox">
     <h2>Bienvenido(a)</h2>
-    <p>
-        Esta es la plataforma de <b>solicitud de materiales e insumos</b> habilitada por 
-        <b>pañol del área de Electricidad, Automatización y Robótica</b>.
-    </p>
+    <p>Esta es la plataforma de <b>solicitud de materiales e insumos</b> habilitada por <b>pañol del área de Electricidad, Automatización y Robótica</b>.</p>
     <h3>Consideraciones:</h3>
     <ul>
         <li>Todo material facilitado debe regresar en las mismas condiciones.</li>
@@ -106,100 +75,96 @@
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.33.0/dist/supabase.min.js"></script>
 <script>
-    // Inicializa Supabase correctamente
-    const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co"; 
+const SUPABASE_ANON_KEY = "TU_ANON_KEY_PUBLICA"; 
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ------------------ CAMBIO DE PANTALLAS ------------------ */
+function hideAll() {
+    welcomeBox.classList.add("hidden");
+    loginBox.classList.add("hidden");
+    registerBox.classList.add("hidden");
+}
+function showWelcome() { hideAll(); welcomeBox.classList.remove("hidden"); }
+function showLogin() { hideAll(); loginBox.classList.remove("hidden"); }
+function showRegister() { hideAll(); registerBox.classList.remove("hidden"); }
 
-    // Cambio de pantallas
-    function hideAll() {
-        welcomeBox.classList.add("hidden");
-        loginBox.classList.add("hidden");
-        registerBox.classList.add("hidden");
-    }
-    function showWelcome() { hideAll(); welcomeBox.classList.remove("hidden"); }
-    function showLogin() { hideAll(); loginBox.classList.remove("hidden"); }
-    function showRegister() { hideAll(); registerBox.classList.remove("hidden"); }
+/* ------------------ VALIDACIÓN DE RUT ------------------ */
+function limpiarRut(rut) { return rut.replace(/\./g, '').replace(/\s/g, '').toUpperCase(); }
+function dvT(rut) { let M=0,S=1; for(;rut;rut=Math.floor(rut/10)) S=(S+rut%10*(9-M++%6))%11; return S?S-1:"K"; }
+function validarRutCompleto(rutCompleto) {
+    if(!rutCompleto) return {ok:false,msg:"Debe ingresar un RUT."};
+    const r = limpiarRut(rutCompleto);
+    if(!r.includes("-")) return {ok:false,msg:"El RUT debe contener guion."};
+    const [num,dv] = r.split("-");
+    if(!/^\d+$/.test(num)) return {ok:false,msg:"La parte numérica debe ser solo números."};
+    return {ok: dvT(parseInt(num,10)).toString()===dv.toUpperCase()};
+}
+function clearRutError() { rutError.textContent = ""; }
 
-    // Validación RUT
-    function limpiarRut(rut) { return rut.replace(/\./g,'').replace(/\s/g,'').toUpperCase(); }
-    function dvT(rut){ let M=0,S=1; for(;rut;rut=Math.floor(rut/10)) S=(S+rut%10*(9-M++%6))%11; return S?S-1:"K"; }
-    function validarRutCompleto(rutCompleto){
-        if(!rutCompleto) return {ok:false,msg:"Debe ingresar un RUT."};
-        const r=limpiarRut(rutCompleto);
-        if(!r.includes("-")) return {ok:false,msg:"El RUT debe contener guion."};
-        const [num,dv]=r.split("-");
-        if(!/^\d+$/.test(num)) return {ok:false,msg:"La parte numérica debe ser solo números."};
-        return {ok: dvT(parseInt(num,10)).toString()===dv.toUpperCase()};
-    }
-    function clearRutError(){ rutError.textContent = ""; }
+/* ------------------ REGISTRO ------------------ */
+async function registrar() {
+    clearRutError();
+    const nombre = regNombre.value.trim();
+    const rut = regRut.value.trim();
+    const carrera = regCarrera.value;
+    const telefono = regTelefono.value.trim();
+    const email = regEmail.value.trim();
+    const pass = regPass.value.trim();
 
-    // Registro
-    async function registrar() {
-        clearRutError();
-        const nombre = regNombre.value.trim();
-        const rut = regRut.value.trim();
-        const carrera = regCarrera.value;
-        const telefono = regTelefono.value.trim();
-        const email = regEmail.value.trim();
-        const pass = regPass.value.trim();
-
-        if (!nombre || !rut || !carrera || !telefono || !email || !pass) {
-            alert("Complete todos los campos.");
-            return;
-        }
-
-        const rutVal = validarRutCompleto(rut);
-        if (!rutVal.ok) { rutError.textContent = rutVal.msg; return; }
-        if(!/^\+569\d{8}$/.test(telefono)){ alert("Teléfono inválido. Formato correcto: +569xxxxxxxx"); return; }
-
-        // Verificar duplicados
-        const { data: usuarios } = await supabaseClient
-            .from('usuarios')
-            .select('*')
-            .or(`rut.eq.${rut},email.eq.${email}`);
-
-        if (usuarios.length > 0) {
-            alert("El RUT o correo ya está registrado.");
-            return;
-        }
-
-        // Insertar usuario
-        const { error } = await supabaseClient
-            .from('usuarios')
-            .insert([{ nombre, rut, carrera, telefono, email, pass }]);
-
-        if (error) { alert("Error al registrar: " + error.message); return; }
-
-        alert("✅ Registro exitoso. Ahora puede iniciar sesión.");
-        showLogin();
+    if(!nombre || !rut || !carrera || !telefono || !email || !pass) {
+        alert("Complete todos los campos."); return;
     }
 
-    // Login
-    async function login() {
-        const email = loginEmail.value.trim();
-        const pass = loginPass.value.trim();
-        if (!email || !pass) { alert("Complete todos los campos."); return; }
+    const rutVal = validarRutCompleto(rut);
+    if(!rutVal.ok){ rutError.textContent = rutVal.msg; return; }
 
-        const { data: user, error } = await supabaseClient
-            .from('usuarios')
-            .select('*')
-            .eq('email', email)
-            .eq('pass', pass)
-            .single();
-
-        if (error || !user) { alert("Correo o contraseña incorrectos."); return; }
-
-        localStorage.setItem("currentUser", JSON.stringify(user));
-        window.location.href = "menu.html";
+    if(!/^\+569\d{8}$/.test(telefono)){
+        alert("Teléfono inválido. Formato correcto: +569xxxxxxxx"); return;
     }
 
-    // Mostrar pantalla inicial
-    showWelcome();
+    // Verificar duplicados
+    const { data: usuarios } = await supabaseClient
+        .from('usuarios')
+        .select('*')
+        .or(`rut.eq.${rut},email.eq.${email}`);
+
+    if(usuarios.length>0){ alert("El RUT o correo ya está registrado."); return; }
+
+    // Insertar usuario
+    const { error } = await supabaseClient
+        .from('usuarios')
+        .insert([{ nombre, rut, carrera, telefono, email, pass }]);
+
+    if(error){ alert("Error al registrar: "+error.message); return; }
+
+    alert("✅ Registro exitoso. Ahora puede iniciar sesión.");
+    showLogin();
+}
+
+/* ------------------ LOGIN ------------------ */
+async function login() {
+    const email = loginEmail.value.trim();
+    const pass = loginPass.value.trim();
+    if(!email||!pass){ alert("Complete todos los campos."); return; }
+
+    const { data: user, error } = await supabaseClient
+        .from('usuarios')
+        .select('*')
+        .eq('email', email)
+        .eq('pass', pass)
+        .single();
+
+    if(error || !user){ alert("Correo o contraseña incorrectos."); return; }
+
+    localStorage.setItem("currentUser", JSON.stringify(user));
+    window.location.href = "menu.html";
+}
+
+showWelcome();
 </script>
-
 </body>
 </html>
+
 
 
