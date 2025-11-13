@@ -1,29 +1,58 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Solicitud de Materiales</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body { font-family: Arial; background: #f0f2f5; margin:0; padding:20px; }
-.box { background:white; padding:20px; max-width:750px; margin:20px auto; border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.15); }
-h2,h3 { text-align:center; margin-bottom:15px; }
-label { font-weight:bold; display:block; margin-top:10px; }
-input, select { width:100%; padding:10px; font-size:15px; margin-top:5px; margin-bottom:15px; border-radius:6px; border:1px solid #aaa; box-sizing:border-box; }
-table { width:100%; border-collapse:collapse; margin-top:15px; }
-th, td { border:1px solid #ccc; padding:10px; }
-th { background:#007bff; color:white; text-align:center; }
-td input { width:100%; padding:7px; font-size:14px; box-sizing:border-box; }
-.btnAdd, .btnRemove, .btnEnviar, .btnVolver { width:100%; padding:12px; border:none; border-radius:6px; font-size:16px; cursor:pointer; margin-top:10px; }
-.btnAdd { background:#17a2b8; color:white; }
-.btnRemove { background:#dc3545; color:white; }
-.btnEnviar { background:#28a745; color:white; }
-.btnVolver { background:#6c757d; color:white; }
-.btnAdd:hover { background:#138496; }
-.btnRemove:hover { background:#c82333; }
-.btnEnviar:hover { background:#218838; }
-.btnVolver:hover { background:#565e64; }
-</style>
+    <meta charset="UTF-8">
+    <title>Solicitud de Materiales</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .box {
+            background: white;
+            padding: 20px;
+            max-width: 750px;
+            margin: 20px auto;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.15);
+        }
+        h2, h3 { text-align: center; margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-top: 10px; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            font-size: 15px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #aaa;
+            box-sizing: border-box;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ccc; padding: 10px; }
+        th { background: #007bff; color: white; text-align: center; }
+        td input { width: 100%; padding: 7px; font-size: 14px; box-sizing: border-box; }
+        .btnAdd, .btnRemove, .btnEnviar, .btnVolver {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btnAdd { background: #17a2b8; color: white; }
+        .btnRemove { background: #dc3545; color: white; }
+        .btnEnviar { background: #28a745; color: white; }
+        .btnVolver { background: #6c757d; color: white; }
+        .btnAdd:hover { background: #138496; }
+        .btnRemove:hover { background: #c82333; }
+        .btnEnviar:hover { background: #218838; }
+        .btnVolver:hover { background: #565e64; }
+    </style>
 </head>
 <body>
 
@@ -83,34 +112,27 @@ td input { width:100%; padding:7px; font-size:14px; box-sizing:border-box; }
     <button class="btnVolver" onclick="location.href='menu.html'">Volver</button>
 </div>
 
-<!-- Supabase JS y tu configuración -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js"></script> <!-- tu archivo en GitHub -->
-
+<script src="supabase.js"></script>
 <script>
-/* ----------- VERIFICAR USUARIO LOGEADO ----------- */
+/* ---------------------- VERIFICAR USUARIO ---------------------- */
 const user = JSON.parse(localStorage.getItem("currentUser"));
 if (!user) window.location.href = "index.html";
 
-/* ----------- AGREGAR/ELIMINAR FILAS ----------- */
+/* ---------------------- AGREGAR / ELIMINAR FILAS ---------------------- */
 function addRow() {
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-        <td><input type="text" placeholder="Ej: Cables de prueba"></td>
-        <td><input type="number" min="1" value="1"></td>
-    `;
+    tr.innerHTML = `<td><input type="text" placeholder="Ej: Cables de prueba"></td>
+                    <td><input type="number" min="1" value="1"></td>`;
     document.getElementById("tbody").appendChild(tr);
 }
-
 function removeRow() {
     const tbody = document.getElementById("tbody");
     if (tbody.rows.length > 1) tbody.deleteRow(tbody.rows.length - 1);
     else alert("Debe haber al menos un material.");
 }
 
-/* ----------- ENVIAR SOLICITUD A SUPABASE ----------- */
+/* ---------------------- ENVIAR SOLICITUD ---------------------- */
 let enviando = false;
-
 async function enviar() {
     if (enviando) return;
     enviando = true;
@@ -131,25 +153,21 @@ async function enviar() {
         const cantidad = f.children[1].querySelector("input").value.trim();
         if (nombre && cantidad) materiales.push({ material: nombre, cantidad: parseInt(cantidad) });
     });
-
     if (materiales.length === 0) { alert("Debe ingresar al menos un material."); resetBtn(); return; }
 
     try {
         // Insertar solicitud
-        const { data: solicitud, error: errSol } = await supabaseClient
+        const { data: solicitud, error: errorSol } = await supabaseClient
             .from('solicitudes')
             .insert([{ email: user.email, docente, asignatura, fecha: new Date().toISOString(), estado: 'Pendiente' }])
-            .select()
-            .single();
-        if (errSol) throw errSol;
-
-        const id_solicitud = solicitud.id;
+            .select().single();
+        if (errorSol) throw errorSol;
 
         // Insertar materiales asociados
-        for (let m of materiales) {
+        for (const m of materiales) {
             const { error: errMat } = await supabaseClient
                 .from('materiales_solicitados')
-                .insert([{ id_solicitud, material: m.material, cantidad: m.cantidad }]);
+                .insert([{ id_solicitud: solicitud.id, material: m.material, cantidad: m.cantidad }]);
             if (errMat) throw errMat;
         }
 
@@ -158,10 +176,8 @@ async function enviar() {
 
     } catch (err) {
         console.error(err);
-        alert("❌ Error al enviar la solicitud: " + err.message);
-    }
-
-    resetBtn();
+        alert("Error al enviar la solicitud: " + err.message);
+    } finally { resetBtn(); }
 }
 
 function resetBtn() {
@@ -171,6 +187,8 @@ function resetBtn() {
     enviando = false;
 }
 </script>
+
 </body>
 </html>
+
 
