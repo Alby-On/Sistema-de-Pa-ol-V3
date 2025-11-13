@@ -103,101 +103,102 @@
     <p><a onclick="showWelcome()">Volver</a></p>
 </div>
 
+<!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.33.0/dist/supabase.min.js"></script>
 <script>
-const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co"; // Tu URL
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"; // Tu clave pública
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Inicializa Supabase correctamente
+    const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
 
-/* ------------------ CAMBIO DE PANTALLAS ------------------ */
-function hideAll() {
-    welcomeBox.classList.add("hidden");
-    loginBox.classList.add("hidden");
-    registerBox.classList.add("hidden");
-}
-function showWelcome() { hideAll(); welcomeBox.classList.remove("hidden"); }
-function showLogin() { hideAll(); loginBox.classList.remove("hidden"); }
-function showRegister() { hideAll(); registerBox.classList.remove("hidden"); }
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ------------------ VALIDACIÓN DE RUT ------------------ */
-function limpiarRut(rut) { return rut.replace(/\./g, '').replace(/\s/g, '').toUpperCase(); }
-function dvT(rut) { let M=0,S=1; for(;rut;rut=Math.floor(rut/10)) S=(S+rut%10*(9-M++%6))%11; return S?S-1:"K"; }
-function validarRutCompleto(rutCompleto) {
-    if(!rutCompleto) return {ok:false,msg:"Debe ingresar un RUT."};
-    const r = limpiarRut(rutCompleto);
-    if(!r.includes("-")) return {ok:false,msg:"El RUT debe contener guion."};
-    const [num,dv] = r.split("-");
-    if(!/^\d+$/.test(num)) return {ok:false,msg:"La parte numérica debe ser solo números."};
-    return {ok: dvT(parseInt(num,10)).toString()===dv.toUpperCase()};
-}
-function clearRutError() { rutError.textContent = ""; }
+    // Cambio de pantallas
+    function hideAll() {
+        welcomeBox.classList.add("hidden");
+        loginBox.classList.add("hidden");
+        registerBox.classList.add("hidden");
+    }
+    function showWelcome() { hideAll(); welcomeBox.classList.remove("hidden"); }
+    function showLogin() { hideAll(); loginBox.classList.remove("hidden"); }
+    function showRegister() { hideAll(); registerBox.classList.remove("hidden"); }
 
-/* ------------------ REGISTRO ------------------ */
-async function registrar() {
-    clearRutError();
-    const nombre = regNombre.value.trim();
-    const rut = regRut.value.trim();
-    const carrera = regCarrera.value;
-    const telefono = regTelefono.value.trim();
-    const email = regEmail.value.trim();
-    const pass = regPass.value.trim();
+    // Validación RUT
+    function limpiarRut(rut) { return rut.replace(/\./g,'').replace(/\s/g,'').toUpperCase(); }
+    function dvT(rut){ let M=0,S=1; for(;rut;rut=Math.floor(rut/10)) S=(S+rut%10*(9-M++%6))%11; return S?S-1:"K"; }
+    function validarRutCompleto(rutCompleto){
+        if(!rutCompleto) return {ok:false,msg:"Debe ingresar un RUT."};
+        const r=limpiarRut(rutCompleto);
+        if(!r.includes("-")) return {ok:false,msg:"El RUT debe contener guion."};
+        const [num,dv]=r.split("-");
+        if(!/^\d+$/.test(num)) return {ok:false,msg:"La parte numérica debe ser solo números."};
+        return {ok: dvT(parseInt(num,10)).toString()===dv.toUpperCase()};
+    }
+    function clearRutError(){ rutError.textContent = ""; }
 
-    if (!nombre || !rut || !carrera || !telefono || !email || !pass) {
-        alert("Complete todos los campos.");
-        return;
+    // Registro
+    async function registrar() {
+        clearRutError();
+        const nombre = regNombre.value.trim();
+        const rut = regRut.value.trim();
+        const carrera = regCarrera.value;
+        const telefono = regTelefono.value.trim();
+        const email = regEmail.value.trim();
+        const pass = regPass.value.trim();
+
+        if (!nombre || !rut || !carrera || !telefono || !email || !pass) {
+            alert("Complete todos los campos.");
+            return;
+        }
+
+        const rutVal = validarRutCompleto(rut);
+        if (!rutVal.ok) { rutError.textContent = rutVal.msg; return; }
+        if(!/^\+569\d{8}$/.test(telefono)){ alert("Teléfono inválido. Formato correcto: +569xxxxxxxx"); return; }
+
+        // Verificar duplicados
+        const { data: usuarios } = await supabaseClient
+            .from('usuarios')
+            .select('*')
+            .or(`rut.eq.${rut},email.eq.${email}`);
+
+        if (usuarios.length > 0) {
+            alert("El RUT o correo ya está registrado.");
+            return;
+        }
+
+        // Insertar usuario
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .insert([{ nombre, rut, carrera, telefono, email, pass }]);
+
+        if (error) { alert("Error al registrar: " + error.message); return; }
+
+        alert("✅ Registro exitoso. Ahora puede iniciar sesión.");
+        showLogin();
     }
 
-    const rutVal = validarRutCompleto(rut);
-    if (!rutVal.ok) { rutError.textContent = rutVal.msg; return; }
+    // Login
+    async function login() {
+        const email = loginEmail.value.trim();
+        const pass = loginPass.value.trim();
+        if (!email || !pass) { alert("Complete todos los campos."); return; }
 
-    if(!/^\+569\d{8}$/.test(telefono)){
-        alert("Teléfono inválido. Formato correcto: +569xxxxxxxx");
-        return;
+        const { data: user, error } = await supabaseClient
+            .from('usuarios')
+            .select('*')
+            .eq('email', email)
+            .eq('pass', pass)
+            .single();
+
+        if (error || !user) { alert("Correo o contraseña incorrectos."); return; }
+
+        localStorage.setItem("currentUser", JSON.stringify(user));
+        window.location.href = "menu.html";
     }
 
-    // Verificar duplicados en Supabase
-    const { data: usuarios, error: selectError } = await supabase
-        .from('usuarios')
-        .select('*')
-        .or(`rut.eq.${rut},email.eq.${email}`);
-
-    if (usuarios && usuarios.length > 0) {
-        alert("El RUT o correo ya está registrado.");
-        return;
-    }
-
-    // Insertar usuario
-    const { error: insertError } = await supabase
-        .from('usuarios')
-        .insert([{ nombre, rut, carrera, telefono, email, pass }]);
-
-    if (insertError) { alert("Error al registrar: " + insertError.message); return; }
-
-    alert("✅ Registro exitoso. Ahora puede iniciar sesión.");
-    showLogin();
-}
-
-/* ------------------ LOGIN ------------------ */
-async function login() {
-    const email = loginEmail.value.trim();
-    const pass = loginPass.value.trim();
-    if (!email || !pass) { alert("Complete todos los campos."); return; }
-
-    const { data: user, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('email', email)
-        .eq('pass', pass)
-        .single();
-
-    if (error || !user) { alert("Correo o contraseña incorrectos."); return; }
-
-    localStorage.setItem("currentUser", JSON.stringify(user));
-    window.location.href = "menu.html";
-}
-
-showWelcome();
+    // Mostrar pantalla inicial
+    showWelcome();
 </script>
+
 </body>
 </html>
 
