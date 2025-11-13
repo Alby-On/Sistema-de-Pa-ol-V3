@@ -1,45 +1,74 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sistema de Pañol V3 - Prueba Supabase</title>
-
-  <!-- ✅ SDK correcto de Supabase (v2 UMD) -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Usuario - Pañol</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <h1>Sistema de Pañol - Conexión Supabase</h1>
-  <p id="estado">Conectando con Supabase...</p>
+  <h2>Registro de Usuario</h2>
+
+  <label>Nombre completo:</label><br>
+  <input type="text" id="nombre_completo" placeholder="Ej: Juan Pérez"><br><br>
+
+  <label>Correo:</label><br>
+  <input type="email" id="correo" placeholder="Ej: juan@correo.com"><br><br>
+
+  <label>Contraseña:</label><br>
+  <input type="password" id="contraseña" placeholder="Mínimo 6 caracteres"><br><br>
+
+  <label>Tipo de usuario:</label><br>
+  <select id="tipo_usuario">
+    <option value="Alumno">Alumno</option>
+    <option value="Docente">Docente</option>
+  </select><br><br>
+
+  <button onclick="registrar()">Crear cuenta</button>
+
+  <p id="mensaje"></p>
 
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      // 🔧 Configura tus credenciales reales aquí:
-      const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+    const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co"; // tu URL
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
 
-      // ✅ Inicializa Supabase correctamente
-      const { createClient } = supabase;
-      const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function registrar() {
+      const nombre_completo = document.getElementById("nombre_completo").value;
+      const correo = document.getElementById("correo").value;
+      const contraseña = document.getElementById("contraseña").value;
+      const tipo_usuario = document.getElementById("tipo_usuario").value;
+      const mensaje = document.getElementById("mensaje");
+
+      if (!nombre_completo || !correo || !contraseña) {
+        mensaje.textContent = "⚠️ Por favor, completa todos los campos.";
+        return;
+      }
 
       try {
-        // 🔍 Prueba rápida: consulta una tabla (por ejemplo “usuarios”)
-        const { data, error } = await supabaseClient.from("usuarios").select("*").limit(1);
+        // Inserta en la tabla usuarios
+        const { data, error } = await supabase
+          .from("usuarios")
+          .insert([
+            { nombre_completo, correo, contraseña, tipo_usuario }
+          ]);
 
         if (error) {
-          console.error("❌ Error al conectar:", error.message);
-          document.getElementById("estado").textContent = "❌ Error al conectar a Supabase: " + error.message;
+          console.error(error);
+          mensaje.textContent = "❌ Error al registrar: " + error.message;
         } else {
-          console.log("✅ Conexión exitosa:", data);
-          document.getElementById("estado").textContent = "✅ Conectado a Supabase correctamente";
+          console.log("✅ Usuario registrado:", data);
+          mensaje.textContent = "✅ Usuario registrado correctamente.";
         }
       } catch (err) {
-        console.error("⚠️ Error inesperado:", err);
-        document.getElementById("estado").textContent = "⚠️ Error inesperado al probar la conexión.";
+        console.error(err);
+        mensaje.textContent = "❌ Error inesperado: " + err.message;
       }
-    });
+    }
   </script>
 </body>
 </html>
+
 
 
