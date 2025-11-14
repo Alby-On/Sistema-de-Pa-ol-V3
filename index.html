@@ -76,12 +76,28 @@
 </div>
 
 <script>
-  // Inicializar Supabase correctamente
+  // Inicializar Supabase
   const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"; // reemplaza por tu clave
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Navegación
+  // Manejar redirección tras confirmación de email
+  async function handleRedirect() {
+    const hash = window.location.hash;
+    if(hash.includes("access_token")){
+      const params = new URLSearchParams(hash.slice(1));
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      const { data, error } = await supabaseClient.auth.setSession({ access_token, refresh_token });
+      if(!error){
+        localStorage.setItem("currentUser", JSON.stringify(data.user));
+        window.location.href = "menu.html";
+      }
+    }
+  }
+  handleRedirect();
+
+  // Navegación entre cajas
   function hideAll(){ welcomeBox.classList.add("hidden"); loginBox.classList.add("hidden"); registerBox.classList.add("hidden"); }
   function showWelcome(){ hideAll(); welcomeBox.classList.remove("hidden"); }
   function showLogin(){ hideAll(); loginBox.classList.remove("hidden"); }
@@ -99,13 +115,13 @@
     return {ok: dvT(parseInt(num,10)).toString() === dv.toUpperCase()};
   }
 
-  // Registro con Auth
+  // Registro con Supabase Auth
   let registrando = false;
   async function registrar(){
     if(registrando) return;
     registrando = true;
     const boton = document.querySelector("#registerBox button.btn-success");
-    boton.disabled = true; boton.textContent = "Registrando...";
+    boton.disabled=true; boton.textContent="Registrando...";
 
     const nombre = regNombre.value.trim();
     const rut = regRut.value.trim();
@@ -116,14 +132,13 @@
     const mensaje = document.getElementById("mensaje");
 
     if(!nombre||!rut||!carrera||!telefono||!email||!pass){
-      mensaje.textContent = "⚠️ Complete todos los campos."; mensaje.style.color="red";
-      boton.disabled = false; boton.textContent="Crear Cuenta"; registrando=false; return;
+      mensaje.textContent="⚠️ Complete todos los campos."; mensaje.style.color="red";
+      boton.disabled=false; boton.textContent="Crear Cuenta"; registrando=false; return;
     }
     const rutVal = validarRutCompleto(rut);
     if(!rutVal.ok){ rutError.textContent=rutVal.msg; boton.disabled=false; boton.textContent="Crear Cuenta"; registrando=false; return; }
     if(!/^\+569\d{8}$/.test(telefono)){ mensaje.textContent="⚠️ Teléfono inválido. Use formato +569XXXXXXXX"; mensaje.style.color="red"; boton.disabled=false; boton.textContent="Crear Cuenta"; registrando=false; return; }
 
-    // Crear usuario con Supabase Auth
     const { data, error } = await supabaseClient.auth.signUp({
       email: email,
       password: pass,
@@ -136,11 +151,12 @@
     boton.disabled=false; boton.textContent="Crear Cuenta"; registrando=false;
   }
 
-  // Login con Auth
+  // Login con Supabase Auth
   async function login(){
     const email = loginEmail.value.trim();
     const pass = loginPass.value.trim();
     const msg = document.getElementById("loginMsg");
+
     if(!email||!pass){ msg.textContent="⚠️ Complete todos los campos."; msg.style.color="red"; return; }
 
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
