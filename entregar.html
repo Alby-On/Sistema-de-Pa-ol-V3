@@ -16,7 +16,6 @@
     .btnEntregar { background: #28a745; color: white; margin-top: 10px; }
 </style>
 </head>
-
 <body>
 <div class="box">
     <h2>Entregar Materiales</h2>
@@ -28,8 +27,8 @@
 
 <script>
 const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const user = JSON.parse(localStorage.getItem("currentUser"));
 if (!user) window.location.href = "index.html";
@@ -51,33 +50,37 @@ async function cargarSolicitudes() {
         return;
     }
 
-    if (!data.length) {
+    if (data.length === 0) {
         cont.innerHTML = "<p>No hay solicitudes registradas.</p>";
         return;
     }
 
-    let html = `<table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Docente</th>
-                <th>Asignatura</th>
-                <th>Fecha Solicitud</th>
-                <th>Estado</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody>`;
-    
+    let html = `
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Docente</th>
+                    <th>Asignatura</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
     data.forEach(s => {
-        html += `<tr>
-            <td>${s.id}</td>
-            <td>${s.docente}</td>
-            <td>${s.asignatura}</td>
-            <td>${new Date(s.fecha_solicitud).toLocaleString()}</td>
-            <td>${s.estado}</td>
-            <td><button class="btnVer" onclick="verDetalles(${s.id})">Ver detalles</button></td>
-        </tr>`;
+        html += `
+            <tr>
+                <td>${s.id}</td>
+                <td>${s.docente}</td>
+                <td>${s.asignatura}</td>
+                <td>${new Date(s.fecha_solicitud).toLocaleString()}</td>
+                <td>${s.estado}</td>
+                <td><button class="btnVer" onclick="verDetalles(${s.id})">Ver detalles</button></td>
+            </tr>
+        `;
     });
 
     html += "</tbody></table>";
@@ -104,7 +107,8 @@ async function verDetalles(id_solicitud) {
         return;
     }
 
-    let html = `<p><strong>ID:</strong> ${solicitud.id}</p>
+    let html = `
+        <p><strong>ID:</strong> ${solicitud.id}</p>
         <p><strong>Docente:</strong> ${solicitud.docente}</p>
         <p><strong>Asignatura:</strong> ${solicitud.asignatura}</p>
         <p><strong>Fecha Solicitud:</strong> ${new Date(solicitud.fecha_solicitud).toLocaleString()}</p>
@@ -112,29 +116,32 @@ async function verDetalles(id_solicitud) {
 
         <h4>Materiales Solicitados</h4>
         <table>
-            <thead><tr><th>Material</th><th>Cantidad</th></tr></thead>
-            <tbody>`;
-    
+            <thead>
+                <tr><th>Material</th><th>Cantidad</th></tr>
+            </thead>
+            <tbody>
+    `;
+
     materiales.forEach(m => {
         html += `<tr><td>${m.material}</td><td>${m.cantidad}</td></tr>`;
     });
 
-    html += `</tbody></table>`;
-
-    if (solicitud.estado !== "Entregado") {
-        html += `<button class="btnEntregar" id="btnEntregar" onclick="entregar(${solicitud.id})">Marcar como ENTREGADO</button>`;
-    }
+    html += `
+            </tbody>
+        </table>
+        <button class="btnEntregar" onclick="entregar(${solicitud.id}, this)" ${solicitud.estado === 'Entregado' ? 'disabled' : ''}>
+            ${solicitud.estado === 'Entregado' ? 'ENTREGADO' : 'Marcar como ENTREGADO'}
+        </button>
+    `;
 
     det.innerHTML = html;
 }
 
-async function entregar(id_solicitud) {
-    const boton = document.getElementById("btnEntregar");
-    if (!boton) return;
+async function entregar(id_solicitud, boton) {
     if (!confirm("¿Confirmar entrega de esta solicitud?")) return;
 
     boton.disabled = true;
-    boton.textContent = "Entregando...";
+    boton.textContent = "Registrando...";
 
     const { error } = await supabaseClient
         .from("solicitudes")
@@ -143,7 +150,7 @@ async function entregar(id_solicitud) {
             fecha_entrega: new Date().toISOString()
         })
         .eq("id", id_solicitud)
-        .eq("email", user.email); // RLS: solo el usuario que creó la solicitud
+        .eq("email", user.email);  // ❌ solo puede actualizar su propia solicitud
 
     if (error) {
         alert("❌ Error al registrar entrega: " + error.message);
@@ -159,6 +166,4 @@ async function entregar(id_solicitud) {
 </script>
 </body>
 </html>
-
-
 
