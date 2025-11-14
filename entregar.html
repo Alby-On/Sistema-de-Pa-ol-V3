@@ -1,169 +1,120 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Entregar Materiales</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-    .box { background: white; padding: 20px; max-width: 900px; margin: auto; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.15); }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 10px; }
-    th { background: #007bff; color: white; }
-    button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; }
-    .btnVer { background: #17a2b8; color: white; }
-    .btnEntregar { background: #28a745; color: white; margin-top: 10px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Entregar Materiales</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+    .box { background: white; padding: 20px; max-width: 600px; margin: 20px auto; border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.15); }
+    h2 { text-align:center; margin-bottom:15px; }
+    table { width:100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+    th { background:#eee; }
+    button { padding:6px 12px; border:none; border-radius:5px; cursor:pointer; }
+    .btn-entregar { background:#28a745; color:white; }
+    .btn-entregar:disabled { background:#aaa; cursor:not-allowed; }
+    #mensaje { text-align:center; font-weight:bold; margin-top:10px; }
+  </style>
 </head>
 <body>
+
 <div class="box">
-    <h2>Entregar Materiales</h2>
-    <div id="listaSolicitudes"></div>
-    <hr>
-    <h3>Detalles de la Solicitud</h3>
-    <div id="detalles"></div>
+  <h2>Mis Solicitudes Pendientes</h2>
+  <div id="mensaje"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Material</th>
+        <th>Cantidad</th>
+        <th>Fecha Solicitud</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody id="solicitudesBody">
+      <!-- Solicitudes se cargan aquí -->
+    </tbody>
+  </table>
+  <p><a href="menu.html">Volver al menú</a></p>
 </div>
 
 <script>
-const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const user = JSON.parse(localStorage.getItem("currentUser"));
-if (!user) window.location.href = "index.html";
+  let currentUser = null;
 
-window.onload = cargarSolicitudes;
-
-async function cargarSolicitudes() {
-    const cont = document.getElementById("listaSolicitudes");
-    cont.innerHTML = "<p>Cargando solicitudes...</p>";
-
-    const { data, error } = await supabaseClient
-        .from("solicitudes")
-        .select("*")
-        .eq("email", user.email)
-        .order("id", { ascending: false });
-
-    if (error) {
-        cont.innerHTML = "❌ Error al cargar solicitudes.";
-        return;
+  async function init() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert("Debes iniciar sesión primero.");
+      window.location.href = "index.html";
+      return;
     }
-
-    if (data.length === 0) {
-        cont.innerHTML = "<p>No hay solicitudes registradas.</p>";
-        return;
-    }
-
-    let html = `
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Docente</th>
-                    <th>Asignatura</th>
-                    <th>Fecha Solicitud</th>
-                    <th>Estado</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    data.forEach(s => {
-        html += `
-            <tr>
-                <td>${s.id}</td>
-                <td>${s.docente}</td>
-                <td>${s.asignatura}</td>
-                <td>${new Date(s.fecha_solicitud).toLocaleString()}</td>
-                <td>${s.estado}</td>
-                <td><button class="btnVer" onclick="verDetalles(${s.id})">Ver detalles</button></td>
-            </tr>
-        `;
-    });
-
-    html += "</tbody></table>";
-    cont.innerHTML = html;
-}
-
-async function verDetalles(id_solicitud) {
-    const det = document.getElementById("detalles");
-    det.innerHTML = "<p>Cargando...</p>";
-
-    const { data: solicitud, error: err1 } = await supabaseClient
-        .from("solicitudes")
-        .select("*")
-        .eq("id", id_solicitud)
-        .single();
-
-    const { data: materiales, error: err2 } = await supabaseClient
-        .from("materiales_solicitados")
-        .select("*")
-        .eq("id_solicitud", id_solicitud);
-
-    if (err1 || err2) {
-        det.innerHTML = "❌ Error al cargar detalles.";
-        return;
-    }
-
-    let html = `
-        <p><strong>ID:</strong> ${solicitud.id}</p>
-        <p><strong>Docente:</strong> ${solicitud.docente}</p>
-        <p><strong>Asignatura:</strong> ${solicitud.asignatura}</p>
-        <p><strong>Fecha Solicitud:</strong> ${new Date(solicitud.fecha_solicitud).toLocaleString()}</p>
-        <p><strong>Estado:</strong> ${solicitud.estado}</p>
-
-        <h4>Materiales Solicitados</h4>
-        <table>
-            <thead>
-                <tr><th>Material</th><th>Cantidad</th></tr>
-            </thead>
-            <tbody>
-    `;
-
-    materiales.forEach(m => {
-        html += `<tr><td>${m.material}</td><td>${m.cantidad}</td></tr>`;
-    });
-
-    html += `
-            </tbody>
-        </table>
-        <button class="btnEntregar" onclick="entregar(${solicitud.id}, this)" ${solicitud.estado === 'Entregado' ? 'disabled' : ''}>
-            ${solicitud.estado === 'Entregado' ? 'ENTREGADO' : 'Marcar como ENTREGADO'}
-        </button>
-    `;
-
-    det.innerHTML = html;
-}
-
-async function entregar(id_solicitud, boton) {
-    if (!confirm("¿Confirmar entrega de esta solicitud?")) return;
-
-    boton.disabled = true;
-    boton.textContent = "Registrando...";
-
-    const { error } = await supabaseClient
-        .from("solicitudes")
-        .update({
-            estado: "Entregado",
-            fecha_entrega: new Date().toISOString()
-        })
-        .eq("id", id_solicitud)
-        .eq("email", user.email);  // ❌ solo puede actualizar su propia solicitud
-
-    if (error) {
-        alert("❌ Error al registrar entrega: " + error.message);
-        boton.disabled = false;
-        boton.textContent = "Marcar como ENTREGADO";
-        return;
-    }
-
-    alert("✅ Entrega registrada correctamente.");
+    currentUser = session.user;
     cargarSolicitudes();
-    document.getElementById("detalles").innerHTML = "";
-}
+  }
+
+  async function cargarSolicitudes() {
+    const { data, error } = await supabase
+      .from("solicitudes")
+      .select("*")
+      .eq("email", currentUser.email)
+      .eq("entregado", false);
+
+    const tbody = document.getElementById("solicitudesBody");
+    tbody.innerHTML = "";
+
+    if (error) {
+      document.getElementById("mensaje").textContent = "❌ Error al cargar solicitudes: " + error.message;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay solicitudes pendientes</td></tr>`;
+      return;
+    }
+
+    data.forEach(solicitud => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${solicitud.id}</td>
+        <td>${solicitud.material}</td>
+        <td>${solicitud.cantidad}</td>
+        <td>${new Date(solicitud.created_at).toLocaleDateString()}</td>
+        <td><button class="btn-entregar" onclick="marcarEntregado(${solicitud.id}, this)">Entregado</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function marcarEntregado(id, boton) {
+    boton.disabled = true;
+    boton.textContent = "Guardando...";
+    const { data, error } = await supabase
+      .from("solicitudes")
+      .update({ entregado: true })
+      .eq("id", id)
+      .eq("email", currentUser.email);
+
+    if (error) {
+      document.getElementById("mensaje").textContent = "❌ Error al registrar entrega: " + error.message;
+      boton.disabled = false;
+      boton.textContent = "Entregado";
+    } else {
+      boton.textContent = "✅ Entregado";
+      cargarSolicitudes(); // refresca tabla
+    }
+  }
+
+  // Iniciar
+  init();
 </script>
+
 </body>
 </html>
+
 
