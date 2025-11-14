@@ -155,24 +155,34 @@ async function enviar() {
     if (materiales.length === 0) { alert("Debe ingresar al menos un material."); resetBtn(); return; }
 
     try {
-        // Insertar en tabla "solicitudes"
         const { data: solicitud, error: errorSolicitud } = await supabaseClient
             .from("solicitudes")
-            .insert([{ email: user.email, docente, asignatura, fecha: new Date().toISOString(), estado: "Pendiente" }])
+            .insert([{
+                email: user.email,
+                docente,
+                asignatura,
+                fecha: new Date().toISOString(),
+                estado: "Pendiente"
+            }])
             .select()
             .single();
+
         if (errorSolicitud) throw errorSolicitud;
 
-        // Insertar materiales vinculados
         for (const m of materiales) {
             const { error } = await supabaseClient
                 .from("materiales_solicitados")
-                .insert([{ id_solicitud: solicitud.id, material: m.material, cantidad: m.cantidad }]);
+                .insert([{ 
+                    id_solicitud: solicitud.id, 
+                    material: m.material, 
+                    cantidad: m.cantidad 
+                }]);
             if (error) throw error;
         }
 
         alert("✅ Solicitud enviada con éxito.");
         location.href = "menu.html";
+
     } catch (err) {
         console.error(err);
         alert("❌ Error al enviar solicitud: " + err.message);
@@ -187,5 +197,4 @@ function resetBtn() {
 </script>
 </body>
 </html>
-
 
