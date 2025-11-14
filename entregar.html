@@ -7,10 +7,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-    .box { background: white; padding: 20px; max-width: 600px; margin: 20px auto; border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.15); }
+    .box { background: white; padding: 20px; max-width: 800px; margin: 20px auto; border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.15); }
     h2 { text-align:center; margin-bottom:15px; }
     table { width:100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:left; vertical-align: top; }
     th { background:#eee; }
     button { padding:6px 12px; border:none; border-radius:5px; cursor:pointer; }
     .btn-entregar { background:#28a745; color:white; }
@@ -27,14 +27,13 @@
     <thead>
       <tr>
         <th>ID</th>
-        <th>Material</th>
-        <th>Cantidad</th>
+        <th>Materiales y Cantidad</th>
         <th>Fecha Solicitud</th>
         <th>Acción</th>
       </tr>
     </thead>
     <tbody id="solicitudesBody">
-      <!-- Solicitudes se cargan aquí -->
+      <!-- Solicitudes se cargarán aquí -->
     </tbody>
   </table>
   <p><a href="menu.html">Volver al menú</a></p>
@@ -59,11 +58,11 @@
   }
 
   async function cargarSolicitudes() {
-    const { data, error } = await supabase
+    const { data: solicitudes, error } = await supabase
       .from("solicitudes")
       .select("*")
       .eq("email", currentUser.email)
-      .eq("entregado", false);
+      .eq("estado", "pendiente"); // solo pendientes
 
     const tbody = document.getElementById("solicitudesBody");
     tbody.innerHTML = "";
@@ -73,30 +72,44 @@
       return;
     }
 
-    if (!data || data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay solicitudes pendientes</td></tr>`;
+    if (!solicitudes || solicitudes.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay solicitudes pendientes</td></tr>`;
       return;
     }
 
-    data.forEach(solicitud => {
+    for (const solicitud of solicitudes) {
+      // Obtener materiales de la solicitud
+      const { data: materiales, error: errorMat } = await supabase
+        .from("materiales_solicitados")
+        .select("*")
+        .eq("id_solicitud", solicitud.id);
+
+      let materialesHTML = "-";
+      if (materiales && materiales.length > 0) {
+        materialesHTML = materiales.map(m => `${m.material} (${m.cantidad})`).join("<br>");
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${solicitud.id}</td>
-        <td>${solicitud.material}</td>
-        <td>${solicitud.cantidad}</td>
-        <td>${new Date(solicitud.created_at).toLocaleDateString()}</td>
+        <td>${materialesHTML}</td>
+        <td>${new Date(solicitud.fecha_solicitud).toLocaleDateString()}</td>
         <td><button class="btn-entregar" onclick="marcarEntregado(${solicitud.id}, this)">Entregado</button></td>
       `;
       tbody.appendChild(tr);
-    });
+    }
   }
 
   async function marcarEntregado(id, boton) {
     boton.disabled = true;
     boton.textContent = "Guardando...";
+
     const { data, error } = await supabase
       .from("solicitudes")
-      .update({ entregado: true })
+      .update({ 
+        estado: "entregada", 
+        fecha_entrega: new Date().toISOString() 
+      })
       .eq("id", id)
       .eq("email", currentUser.email);
 
@@ -110,11 +123,11 @@
     }
   }
 
-  // Iniciar
   init();
 </script>
 
 </body>
 </html>
+
 
 
