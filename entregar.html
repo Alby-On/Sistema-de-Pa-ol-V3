@@ -1,174 +1,159 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Entregar Materiales</title>
+  <meta charset="UTF-8">
+  <title>Entregar Materiales</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script>
-        const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-        const SUPABASE_KEY = "TU_API_KEY_AQUI";
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const email = localStorage.getItem("email");
-
-            if (!email) {
-                alert("Debe iniciar sesión para continuar");
-                window.location.href = "login.html";
-                return;
-            }
-
-            cargarSolicitudesPendientes(email);
-        });
-
-        async function cargarSolicitudesPendientes(emailUsuario) {
-            const contenedor = document.getElementById("contenedor");
-
-            contenedor.innerHTML = "<p>Cargando solicitudes...</p>";
-
-            const { data: solicitudes, error } = await supabaseClient
-                .from("solicitudes")
-                .select("*")
-                .eq("estado", "Pendiente")
-                .eq("email", emailUsuario);   // FILTRO POR USUARIO LOGEADO
-
-            if (error) {
-                contenedor.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
-                return;
-            }
-
-            if (!solicitudes || solicitudes.length === 0) {
-                contenedor.innerHTML = "<p>No hay solicitudes pendientes.</p>";
-                return;
-            }
-
-            contenedor.innerHTML = "";
-
-            for (const sol of solicitudes) {
-                const div = document.createElement("div");
-                div.classList.add("solicitud");
-
-                div.innerHTML = `
-                    <h3>Solicitud #${sol.id}</h3>
-                    <p><strong>Docente:</strong> ${sol.docente}</p>
-                    <p><strong>Asignatura:</strong> ${sol.asignatura}</p>
-                    <p><strong>Fecha Solicitud:</strong> ${sol.fecha}</p>
-
-                    <h4>Materiales solicitados:</h4>
-                    <div id="materiales-${sol.id}">Cargando materiales...</div>
-                    <hr>
-                `;
-
-                contenedor.appendChild(div);
-
-                cargarMateriales(sol.id);
-            }
-        }
-
-        async function cargarMateriales(idSolicitud) {
-            const divMat = document.getElementById(`materiales-${idSolicitud}`);
-
-            const { data: materiales, error } = await supabaseClient
-                .from("materiales_solicitados")
-                .select("*")
-                .eq("id_solicitud", idSolicitud);
-
-            if (error) {
-                divMat.innerHTML = `<p style="color:red">Error al cargar materiales</p>`;
-                return;
-            }
-
-            if (!materiales || materiales.length === 0) {
-                divMat.innerHTML = "<p>No hay materiales para esta solicitud.</p>";
-                return;
-            }
-
-            let html = "<ul>";
-
-            materiales.forEach(mat => {
-                html += `
-                    <li>
-                        ${mat.material} — Cant: ${mat.cantidad}<br>
-                        ${mat.fecha_entrega ? 
-                            `<span style="color:green">✔ Entregado el ${mat.fecha_entrega}</span>` :
-                            `<button onclick="entregarMaterial(${mat.id}, ${idSolicitud})">Entregar</button>`
-                        }
-                    </li><br>
-                `;
-            });
-
-            html += "</ul>";
-
-            divMat.innerHTML = html;
-        }
-
-        async function entregarMaterial(idMaterial, idSolicitud) {
-            const fecha = new Date().toISOString();
-
-            const { error } = await supabaseClient
-                .from("materiales_solicitados")
-                .update({ fecha_entrega: fecha })
-                .eq("id", idMaterial);
-
-            if (error) {
-                alert("Error entregando material");
-                return;
-            }
-
-            cargarMateriales(idSolicitud);
-            revisarSolicitudCompletada(idSolicitud);
-        }
-
-        async function revisarSolicitudCompletada(idSolicitud) {
-            const { data: materiales, error } = await supabaseClient
-                .from("materiales_solicitados")
-                .select("fecha_entrega")
-                .eq("id_solicitud", idSolicitud);
-
-            if (error) return;
-
-            const pendientes = materiales.some(m => m.fecha_entrega === null);
-
-            if (!pendientes) {
-                await supabaseClient
-                    .from("solicitudes")
-                    .update({ estado: "Entregado" })
-                    .eq("id", idSolicitud);
-
-                const email = localStorage.getItem("email");
-                cargarSolicitudesPendientes(email);
-            }
-        }
-
-    </script>
-
-    <style>
-        body { font-family: Arial; padding: 20px; }
-        .solicitud {
-            background: #f0f0f0;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
-        button {
-            padding: 6px 10px;
-            border: none;
-            background: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover { background: #0056b3; }
-    </style>
+  <style>
+    body { font-family: Arial; background:#f2f2f2; padding:20px; }
+    .box { background:#fff; padding:20px; border-radius:10px; max-width:600px; margin:20px auto; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+    h2 { text-align:center; }
+    .solicitud { border:1px solid #ddd; padding:15px; border-radius:10px; margin-bottom:15px; }
+    .material { padding:5px 0; border-bottom:1px solid #eee; }
+    button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; }
+    .btn-entregar { background:#28a745; color:white; }
+    .btn-entregar:hover { opacity:0.9; }
+    .completado { color:green; font-weight:bold; }
+  </style>
 </head>
 <body>
 
-<h1>Entregar materiales</h1>
+<div class="box">
+  <h2>Entregar Materiales</h2>
+  <div id="contenedor"></div>
+</div>
 
-<div id="contenedor"></div>
+<script>
+/* ----------------------------------------------------
+   🔗 Conexión Supabase
+---------------------------------------------------- */
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+/* ----------------------------------------------------
+   🔄 Cargar solicitudes pendientes
+---------------------------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+    const email = localStorage.getItem("email");
+    cargarSolicitudesPendientes(email);
+});
+
+async function cargarSolicitudesPendientes(emailUsuario) {
+    const cont = document.getElementById("contenedor");
+    cont.innerHTML = "<p>Cargando solicitudes...</p>";
+
+    let query = supabaseClient
+        .from("solicitudes")
+        .select("*")
+        .eq("estado", "Pendiente");
+
+    if (emailUsuario) {
+        query = query.eq("email", emailUsuario);
+    }
+
+    const { data: solicitudes, error } = await query;
+
+    if (error) {
+        cont.innerHTML = "<p>Error al cargar solicitudes.</p>";
+        return;
+    }
+
+    if (!solicitudes || solicitudes.length === 0) {
+        cont.innerHTML = "<p>No hay solicitudes pendientes.</p>";
+        return;
+    }
+
+    cont.innerHTML = "";
+
+    for (const sol of solicitudes) {
+        await mostrarSolicitud(sol);
+    }
+}
+
+
+/* ----------------------------------------------------
+   📦 Mostrar solicitud con sus materiales
+---------------------------------------------------- */
+async function mostrarSolicitud(solicitud) {
+    const cont = document.getElementById("contenedor");
+
+    // obtener materiales
+    const { data: materiales } = await supabaseClient
+        .from("materiales_solicitados")
+        .select("*")
+        .eq("id_solicitud", solicitud.id);
+
+    const div = document.createElement("div");
+    div.className = "solicitud";
+
+    let html = `
+      <p><b>ID Solicitud:</b> ${solicitud.id}</p>
+      <p><b>Asignatura:</b> ${solicitud.asignatura}</p>
+      <p><b>Fecha:</b> ${new Date(solicitud.fecha).toLocaleString()}</p>
+      <p><b>Solicitante:</b> ${solicitud.email}</p>
+      <h4>Materiales:</h4>
+    `;
+
+    materiales.forEach(m => {
+        html += `
+          <div class="material">
+            <b>${m.material}</b> — Cant: ${m.cantidad}
+            ${m.fecha_entrega ? `<span class="completado">✔ Entregado (${new Date(m.fecha_entrega).toLocaleString()})</span>` 
+            : `<button class="btn-entregar" onclick="entregarMaterial(${m.id}, ${solicitud.id})">Entregar</button>`}
+          </div>
+        `;
+    });
+
+    div.innerHTML = html;
+    cont.appendChild(div);
+}
+
+
+/* ----------------------------------------------------
+   📤 Entregar material (marca fecha_entrega)
+---------------------------------------------------- */
+async function entregarMaterial(idMaterial, idSolicitud) {
+    const fecha = new Date().toISOString();
+
+    await supabaseClient
+        .from("materiales_solicitados")
+        .update({ fecha_entrega: fecha })
+        .eq("id", idMaterial);
+
+    // verificar si todos están entregados
+    await verificarSolicitudCompletada(idSolicitud);
+
+    location.reload();
+}
+
+
+/* ----------------------------------------------------
+   ✔️ Si todos los materiales fueron entregados → marcar solicitud como "Entregado"
+---------------------------------------------------- */
+async function verificarSolicitudCompletada(idSolicitud) {
+    const { data: materiales } = await supabaseClient
+        .from("materiales_solicitados")
+        .select("*")
+        .eq("id_solicitud", idSolicitud);
+
+    const todosEntregados = materiales.every(m => m.fecha_entrega !== null);
+
+    if (todosEntregados) {
+        await supabaseClient
+            .from("solicitudes")
+            .update({ estado: "Entregado" })
+            .eq("id", idSolicitud);
+    }
+}
+</script>
 
 </body>
 </html>
+
