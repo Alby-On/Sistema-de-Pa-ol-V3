@@ -30,22 +30,27 @@
 <script>
 /* 🔗 Conexión Supabase */
 const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
-
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* 🟦 Validar usuario */
-const user = JSON.parse(localStorage.getItem("currentUser"));
-if (!user) window.location.href = "index.html";
+async function checkUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) window.location.href = "index.html";
+    return user;
+}
 
-window.onload = cargarSolicitudes;
+window.onload = async () => {
+    const user = await checkUser();
+    cargarSolicitudes(user);
+};
 
-/* 🟩 Cargar solicitudes del usuario */
-async function cargarSolicitudes() {
+/* 🟩 Cargar solicitudes del usuario autenticado */
+async function cargarSolicitudes(user) {
     const cont = document.getElementById("listaSolicitudes");
     cont.innerHTML = "<p>Cargando solicitudes...</p>";
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from("solicitudes")
         .select("*")
         .eq("email", user.email)
@@ -56,7 +61,7 @@ async function cargarSolicitudes() {
         return;
     }
 
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
         cont.innerHTML = "<p>No hay solicitudes registradas.</p>";
         return;
     }
@@ -98,13 +103,13 @@ async function verDetalles(id_solicitud) {
     const det = document.getElementById("detalles");
     det.innerHTML = "<p>Cargando...</p>";
 
-    const { data: solicitud, error: err1 } = await supabaseClient
+    const { data: solicitud, error: err1 } = await supabase
         .from("solicitudes")
         .select("*")
         .eq("id", id_solicitud)
         .single();
 
-    const { data: materiales, error: err2 } = await supabaseClient
+    const { data: materiales, error: err2 } = await supabase
         .from("materiales_solicitados")
         .select("*")
         .eq("id_solicitud", id_solicitud);
@@ -136,7 +141,7 @@ async function verDetalles(id_solicitud) {
     html += `
             </tbody>
         </table>
-        <button class="btnEntregar" onclick="entregar(${solicitud.id})">Marcar como ENTREGADO</button>
+        ${solicitud.estado !== 'Entregado' ? `<button class="btnEntregar" onclick="entregar(${solicitud.id})">Marcar como ENTREGADO</button>` : ''}
     `;
 
     det.innerHTML = html;
@@ -144,30 +149,29 @@ async function verDetalles(id_solicitud) {
 
 /* 🟩 ENTREGAR solicitud */
 async function entregar(id_solicitud) {
-
     if (!confirm("¿Confirmar entrega de esta solicitud?")) return;
 
-    const { error } = await supabaseClient
+    const { data, error } = await supabase
         .from("solicitudes")
         .update({
             estado: "Entregado",
             fecha_entrega: new Date().toISOString()
         })
-        .eq("id", Number(id_solicitud));  // 🔥 Fix crítico
+        .eq("id", id_solicitud);
 
     if (error) {
-        alert("❌ Error al registrar entrega");
+        alert("❌ Error al registrar entrega: " + error.message);
         return;
     }
 
     alert("✅ Entrega registrada correctamente.");
-    cargarSolicitudes();
+    const user = await checkUser();
+    cargarSolicitudes(user);
     document.getElementById("detalles").innerHTML = "";
-
 }
 </script>
-
 </body>
 </html>
+
 
 
