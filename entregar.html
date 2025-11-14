@@ -58,11 +58,12 @@
   }
 
   async function cargarSolicitudes() {
+    // Filtrar solicitudes pendientes por email del usuario y fecha_entrega nula
     const { data: solicitudes, error } = await supabase
       .from("solicitudes")
       .select("*")
       .eq("email", currentUser.email)
-      .eq("estado", "pendiente"); // solo pendientes
+      .is("fecha_entrega", null); // solicitudes no entregadas
 
     const tbody = document.getElementById("solicitudesBody");
     tbody.innerHTML = "";
@@ -107,7 +108,7 @@
     const { data, error } = await supabase
       .from("solicitudes")
       .update({ 
-        estado: "entregada", 
+        estado: "Entregada", 
         fecha_entrega: new Date().toISOString() 
       })
       .eq("id", id)
