@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>Solicitud de Materiales</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -48,10 +50,6 @@
     .btnRemove { background: #dc3545; color: white; }
     .btnEnviar { background: #28a745; color: white; }
     .btnVolver { background: #6c757d; color: white; }
-    .btnAdd:hover { background: #138496; }
-    .btnRemove:hover { background: #c82333; }
-    .btnEnviar:hover { background: #218838; }
-    .btnVolver:hover { background: #565e64; }
 </style>
 </head>
 <body>
@@ -112,27 +110,33 @@
     <button class="btnVolver" onclick="location.href='menu.html'">Volver</button>
 </div>
 
-<!-- ----------------- SUPABASE ----------------- -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.33.0/dist/supabase.min.js"></script>
-<script src="supabase.js"></script>
-
 <script>
+/* 🔗 Conexión a Supabase IGUAL que en index.html */
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const user = JSON.parse(localStorage.getItem("currentUser"));
 if (!user) window.location.href = "index.html";
 
+/* ➕ Añadir fila */
 function addRow() {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td><input type="text" placeholder="Ej: Cables de prueba"></td>
-                    <td><input type="number" min="1" value="1"></td>`;
+    tr.innerHTML = `
+        <td><input type="text" placeholder="Ej: Cables de prueba"></td>
+        <td><input type="number" min="1" value="1"></td>`;
     document.getElementById("tbody").appendChild(tr);
 }
 
+/* ➖ Eliminar fila */
 function removeRow() {
     const tbody = document.getElementById("tbody");
     if (tbody.rows.length > 1) tbody.deleteRow(tbody.rows.length - 1);
     else alert("Debe haber al menos un material.");
 }
 
+/* 📤 Enviar Solicitud */
 async function enviar() {
     const btn = document.querySelector(".btnEnviar");
     btn.disabled = true;
@@ -143,19 +147,20 @@ async function enviar() {
     const filas = document.querySelectorAll("#tbody tr");
     const materiales = [];
 
-    if (!docente) { alert("Seleccione un docente."); resetBtn(); return; }
-    if (!asignatura) { alert("Ingrese la asignatura."); resetBtn(); return; }
+    if (!docente) return finishError("Seleccione un docente.");
+    if (!asignatura) return finishError("Ingrese la asignatura.");
 
     filas.forEach(f => {
         const nombre = f.children[0].querySelector("input").value.trim();
-        const cantidad = parseInt(f.children[1].querySelector("input").value.trim(),10);
+        const cantidad = parseInt(f.children[1].querySelector("input").value.trim(), 10);
         if (nombre && cantidad) materiales.push({ material: nombre, cantidad });
     });
 
-    if (materiales.length === 0) { alert("Debe ingresar al menos un material."); resetBtn(); return; }
+    if (materiales.length === 0) return finishError("Debe ingresar al menos un material.");
 
     try {
-        const { data: solicitud, error: errorSolicitud } = await supabaseClient
+        /* 1️⃣ Insertar solicitud */
+        const { data: solicitud, error } = await supabaseClient
             .from("solicitudes")
             .insert([{
                 email: user.email,
@@ -167,34 +172,33 @@ async function enviar() {
             .select()
             .single();
 
-        if (errorSolicitud) throw errorSolicitud;
+        if (error) throw error;
 
+        /* 2️⃣ Insertar materiales */
         for (const m of materiales) {
             const { error } = await supabaseClient
                 .from("materiales_solicitados")
-                .insert([{ 
-                    id_solicitud: solicitud.id, 
-                    material: m.material, 
-                    cantidad: m.cantidad 
-                }]);
+                .insert([{ id_solicitud: solicitud.id, material: m.material, cantidad: m.cantidad }]);
             if (error) throw error;
         }
 
         alert("✅ Solicitud enviada con éxito.");
-        location.href = "menu.html";
+        window.location.href = "menu.html";
 
     } catch (err) {
         console.error(err);
-        alert("❌ Error al enviar solicitud: " + err.message);
+        finishError("Error al enviar: " + err.message);
     }
 }
 
-function resetBtn() {
+function finishError(msg) {
+    alert("❌ " + msg);
     const btn = document.querySelector(".btnEnviar");
     btn.disabled = false;
     btn.innerText = "Enviar Solicitud";
 }
 </script>
+
 </body>
 </html>
 
