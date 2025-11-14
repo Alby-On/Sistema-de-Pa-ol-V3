@@ -41,7 +41,7 @@
 
 <script>
   const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null;
@@ -58,12 +58,11 @@
   }
 
   async function cargarSolicitudes() {
-    // Filtrar solicitudes pendientes por email del usuario y fecha_entrega nula
     const { data: solicitudes, error } = await supabase
       .from("solicitudes")
       .select("*")
       .eq("email", currentUser.email)
-      .is("fecha_entrega", null); // solicitudes no entregadas
+      .is("fecha_entrega", null); // pendientes
 
     const tbody = document.getElementById("solicitudesBody");
     tbody.innerHTML = "";
@@ -79,7 +78,6 @@
     }
 
     for (const solicitud of solicitudes) {
-      // Obtener materiales de la solicitud
       const { data: materiales, error: errorMat } = await supabase
         .from("materiales_solicitados")
         .select("*")
@@ -108,8 +106,8 @@
     const { data, error } = await supabase
       .from("solicitudes")
       .update({ 
-        estado: "Entregada", 
-        fecha_entrega: new Date().toISOString() 
+        estado: "Entregada",
+        fecha_entrega: new Date().toISOString()
       })
       .eq("id", id)
       .eq("email", currentUser.email);
@@ -120,7 +118,7 @@
       boton.textContent = "Entregado";
     } else {
       boton.textContent = "✅ Entregado";
-      cargarSolicitudes(); // refresca tabla
+      cargarSolicitudes();
     }
   }
 
