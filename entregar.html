@@ -85,93 +85,117 @@
         border: none;
         color: white;
         border-radius: 10px;
-        cursor: not-allowed;   /* Visualmente deshabilitado */
+        cursor: not-allowed;
         opacity: 0.5;
     }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
 <div class="container">
     <h2>Entregar Materiales</h2>
-
-    <!-- Solicitudes Pendientes (Múltiples) -->
-    <div class="solicitud-box" data-id="12345">
-        <div class="section-title">Datos de la Solicitud</div>
-        <table>
-            <tr><th>ID Solicitud</th><td>12345</td></tr>
-            <tr><th>Email</th><td>usuario@correo.com</td></tr>
-            <tr><th>Docente</th><td>Juan Pérez</td></tr>
-            <tr><th>Asignatura</th><td>Electrónica</td></tr>
-            <tr><th>Fecha Solicitud</th><td>2025-11-14</td></tr>
-            <tr><th>Estado</th><td>Pendiente</td></tr>
-        </table>
-
-        <div class="section-title">Materiales Solicitados</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Material</th>
-                    <th>Cantidad</th>
-                    <th>Entregado</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>Cable 2.5mm</td><td>5</td><td class="check-col"><input type="checkbox" class="chk"></td></tr>
-                <tr><td>Multímetro</td><td>1</td><td class="check-col"><input type="checkbox" class="chk"></td></tr>
-                <tr><td>Protector 10A</td><td>3</td><td class="check-col"><input type="checkbox" class="chk"></td></tr>
-            </tbody>
-        </table>
-
-        <div class="mensaje-error">Debes seleccionar todos los materiales antes de poder continuar con la entrega.</div>
-        <button class="btn-entregar">Entregar Materiales</button>
-    </div>
-
-    <div class="solicitud-box" data-id="12346">
-        <div class="section-title">Datos de la Solicitud</div>
-        <table>
-            <tr><th>ID Solicitud</th><td>12346</td></tr>
-            <tr><th>Email</th><td>otro@correo.com</td></tr>
-            <tr><th>Docente</th><td>María Soto</td></tr>
-            <tr><th>Asignatura</th><td>Automatización</td></tr>
-            <tr><th>Fecha Solicitud</th><td>2025-11-13</td></tr>
-            <tr><th>Estado</th><td>Pendiente</td></tr>
-        </table>
-
-        <div class="section-title">Materiales Solicitados</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Material</th>
-                    <th>Cantidad</th>
-                    <th>Entregado</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>Sensor de temperatura</td><td>2</td><td class="check-col"><input type="checkbox" class="chk"></td></tr>
-                <tr><td>Relay 5V</td><td>4</td><td class="check-col"><input type="checkbox" class="chk"></td></tr>
-            </tbody>
-        </table>
-
-        <div class="mensaje-error">Debes seleccionar todos los materiales antes de poder continuar con la entrega.</div>
-        <button class="btn-entregar">Entregar Materiales</button>
-    </div>
-
+    <div id="solicitudes-container"></div>
 </div>
 
 <script>
-    // Funcionalidad visual para checklist y activación de botón
-    document.querySelectorAll('.solicitud-box').forEach(box => {
+const SUPABASE_URL = "https://tudominio.supabase.co"; // tu URL
+const SUPABASE_ANON_KEY = "tu_clave_anonima"; // tu clave anónima
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Función principal
+async function init() {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+        alert("Debes iniciar sesión.");
+        window.location.href = "index.html";
+        return;
+    }
+
+    const userEmail = session.user.email;
+    cargarSolicitudes(userEmail);
+}
+
+async function cargarSolicitudes(email) {
+    const { data: solicitudes, error } = await supabase
+        .from('solicitud')
+        .select('*')
+        .eq('email', email)
+        .eq('estado', 'Pendiente');
+
+    if (error) {
+        alert("Error al cargar solicitudes: " + error.message);
+        return;
+    }
+
+    const container = document.getElementById('solicitudes-container');
+    container.innerHTML = "";
+
+    for (const solicitud of solicitudes) {
+        // Obtener materiales asociados
+        const { data: materiales, error: errorMat } = await supabase
+            .from('materiales_solicitados')
+            .select('*')
+            .eq('id_solicitud', solicitud.id);
+
+        if (errorMat) {
+            console.error("Error materiales:", errorMat.message);
+            continue;
+        }
+
+        // Crear HTML
+        const box = document.createElement('div');
+        box.classList.add('solicitud-box');
+        box.dataset.id = solicitud.id;
+
+        // Datos de la solicitud
+        box.innerHTML = `
+            <div class="section-title">Datos de la Solicitud</div>
+            <table>
+                <tr><th>ID Solicitud</th><td>${solicitud.id}</td></tr>
+                <tr><th>Email</th><td>${solicitud.email}</td></tr>
+                <tr><th>Docente</th><td>${solicitud.docente}</td></tr>
+                <tr><th>Asignatura</th><td>${solicitud.asignatura}</td></tr>
+                <tr><th>Fecha Solicitud</th><td>${new Date(solicitud.fecha_solicitud).toLocaleDateString()}</td></tr>
+                <tr><th>Estado</th><td>${solicitud.estado}</td></tr>
+            </table>
+
+            <div class="section-title">Materiales Solicitados</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Cantidad</th>
+                        <th>Entregado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${materiales.map(m => `
+                        <tr>
+                            <td>${m.material}</td>
+                            <td>${m.cantidad}</td>
+                            <td class="check-col"><input type="checkbox" class="chk"></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <div class="mensaje-error">Debes seleccionar todos los materiales antes de poder continuar con la entrega.</div>
+            <button class="btn-entregar">Entregar Materiales</button>
+        `;
+
+        container.appendChild(box);
+
+        // Agregar funcionalidad de checklist
         const checkboxes = box.querySelectorAll('.chk');
         const mensaje = box.querySelector('.mensaje-error');
         const btn = box.querySelector('.btn-entregar');
 
         function validarChecklist() {
             let completos = true;
-            checkboxes.forEach(chk => {
-                if (!chk.checked) completos = false;
-            });
+            checkboxes.forEach(chk => { if (!chk.checked) completos = false; });
             if (completos) {
                 mensaje.style.display = 'none';
                 btn.style.opacity = 1;
@@ -184,9 +208,36 @@
         }
 
         checkboxes.forEach(chk => chk.addEventListener('change', validarChecklist));
-    });
+
+        btn.addEventListener('click', async () => {
+            // Verificar checklist antes
+            let todosMarcados = [...checkboxes].every(c => c.checked);
+            if (!todosMarcados) return;
+
+            // Actualizar solicitud en Supabase
+            const { error: updateError } = await supabase
+                .from('solicitud')
+                .update({
+                    estado: 'Entregado',
+                    fecha_entrega: new Date().toISOString()
+                })
+                .eq('id', solicitud.id);
+
+            if (updateError) {
+                alert("Error al registrar la entrega: " + updateError.message);
+                return;
+            }
+
+            alert("✔ Entrega registrada correctamente.");
+            cargarSolicitudes(email); // refrescar
+        });
+    }
+}
+
+init();
 </script>
 
 </body>
 </html>
+
 
