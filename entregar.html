@@ -7,60 +7,84 @@
 
 <style>
     body {
-        font-family: Arial;
-        background: #f0f2f5;
+        font-family: Arial, sans-serif;
+        background: #eef1f4;
         padding: 20px;
         margin: 0;
     }
 
     .box {
         background: white;
-        padding: 20px;
+        padding: 25px;
         width: 100%;
-        max-width: 750px;
+        max-width: 850px;
         margin: auto;
-        margin-top: 10px;
-        border-radius: 12px;
-        box-shadow: 0 0 15px rgba(0,0,0,0.15);
+        margin-top: 15px;
+        border-radius: 14px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.15);
     }
 
-    h2 { text-align:center; }
-
-    .solicitud {
+    h2 {
+        text-align:center;
+        font-size: 24px;
         margin-bottom: 25px;
-        padding: 15px;
-        border-left: 5px solid #007bff;
-        background: #f8f9fa;
-        border-radius: 8px;
+        color: #333;
     }
 
-    .solicitud h3 {
-        margin: 0 0 10px 0;
-        font-size: 18px;
+    /* Tarjeta de solicitud */
+    .solicitud {
+        margin-bottom: 35px;
+        padding: 20px;
+        border-left: 6px solid #007bff;
+        background: #fafbfc;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .titulo-solicitud {
+        font-size: 20px;
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+
+    .info {
+        background: #fff;
+        border-radius: 8px;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.1);
     }
 
     .info p {
-        margin: 4px 0;
+        margin: 5px 0;
         font-size: 15px;
     }
 
+    /* TABLA */
     table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 12px;
     }
 
-    th, td {
-        border: 1px solid #ccc;
+    th {
+        background: #007bff;
+        color: white;
+        padding: 10px;
+        font-size: 15px;
+        text-align: center;
+    }
+
+    td {
+        border: 1px solid #ddd;
         padding: 10px;
         font-size: 14px;
     }
 
-    th {
-        background: #007bff;
-        color: white;
-        text-align: center;
-    }
+    td:nth-child(1) { width: 50%; }
+    td:nth-child(2) { width: 20%; }
+    td:nth-child(3) { width: 10%; }
 
     td input[type="checkbox"] {
         width: 20px;
@@ -68,30 +92,43 @@
         cursor: pointer;
     }
 
-    .btnCompletar {
-        background: #28a745;
-        padding: 12px;
-        width: 100%;
-        border: none;
+    /* Mensaje advertencia */
+    .alerta {
+        background: #ffdddd;
+        color: #cc0000;
+        padding: 10px;
+        border-left: 5px solid #cc0000;
+        margin-top: 12px;
+        margin-bottom: 10px;
         border-radius: 6px;
-        color: white;
-        font-size: 16px;
-        cursor: pointer;
-        margin-top: 15px;
+        display: none;
     }
 
+    /* Botones */
+    .btnCompletar {
+        background: #28a745;
+        padding: 14px;
+        width: 100%;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-size: 17px;
+        cursor: pointer;
+        margin-top: 20px;
+        font-weight: bold;
+    }
     .btnCompletar:hover { background: #218838; }
 
     .btnVolver {
         background: #6c757d;
-        padding: 12px;
+        padding: 14px;
         width: 100%;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         color: white;
         font-size: 17px;
         cursor: pointer;
-        margin-top: 15px;
+        margin-top: 10px;
     }
 
 </style>
@@ -102,9 +139,10 @@
 
     <h2>Solicitudes Pendientes</h2>
 
-    <!-- PLANTILLA DE UNA SOLICITUD (VISUAL) -->
+    <!-- ----- SOLICITUD DE EJEMPLO ----- -->
     <div class="solicitud">
-        <h3>Solicitud #123</h3>
+        
+        <div class="titulo-solicitud">Solicitud #123</div>
 
         <div class="info">
             <p><b>Fecha solicitud:</b> 2025-01-20</p>
@@ -119,42 +157,57 @@
                 <tr>
                     <th>Material</th>
                     <th>Cantidad</th>
-                    <th>Entregado</th>
+                    <th>✔</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>Cable rojo 1.5mm</td>
                     <td>5 metros</td>
-                    <td style="text-align:center;">
-                        <input type="checkbox">
-                    </td>
+                    <td style="text-align:center;"><input class="chk"></td>
                 </tr>
                 <tr>
                     <td>Tester digital</td>
                     <td>1 unidad</td>
-                    <td style="text-align:center;">
-                        <input type="checkbox">
-                    </td>
+                    <td style="text-align:center;"><input class="chk"></td>
                 </tr>
                 <tr>
                     <td>Destornillador plano</td>
                     <td>2 unidades</td>
-                    <td style="text-align:center;">
-                        <input type="checkbox">
-                    </td>
+                    <td style="text-align:center;"><input class="chk"></td>
                 </tr>
             </tbody>
         </table>
 
-        <button class="btnCompletar">Completar Entrega</button>
-    </div>
+        <div class="alerta" id="alerta123">
+            ⚠ Debes marcar <b>todos los materiales</b> antes de completar la entrega.
+        </div>
 
-    <!-- FIN DE UNA SOLICITUD -->
+        <button class="btnCompletar" onclick="verificar(123)">Completar Entrega</button>
+
+    </div>
+    <!-- ----- FIN SOLICITUD ----- -->
 
     <button class="btnVolver" onclick="location.href='menu.html'">Volver</button>
 
 </div>
+
+<script>
+/* SOLO EFECTO VISUAL - NO HAY SUPABASE */
+function verificar(id) {
+    const checks = document.querySelectorAll(".solicitud input.chk");
+    const alerta = document.getElementById("alerta" + id);
+
+    const faltantes = [...checks].some(c => !c.checked);
+
+    if (faltantes) {
+        alerta.style.display = "block";
+    } else {
+        alerta.style.display = "none";
+        alert("✔ Visualmente completado. (Lógica se agregará luego)");
+    }
+}
+</script>
 
 </body>
 </html>
