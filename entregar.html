@@ -1,132 +1,101 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Entregar Materiales</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-    .box { background: white; padding: 20px; max-width: 800px; margin: 20px auto; border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.15); }
-    h2 { text-align:center; margin-bottom:15px; }
-    table { width:100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border:1px solid #ccc; padding:8px; text-align:left; vertical-align: top; }
-    th { background:#eee; }
-    button { padding:6px 12px; border:none; border-radius:5px; cursor:pointer; }
-    .btn-entregar { background:#28a745; color:white; }
-    .btn-entregar:disabled { background:#aaa; cursor:not-allowed; }
-    #mensaje { text-align:center; font-weight:bold; margin-top:10px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Entregar Materiales</title>
 </head>
 <body>
 
-<div class="box">
-  <h2>Mis Solicitudes Pendientes</h2>
-  <div id="mensaje"></div>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Materiales y Cantidad</th>
-        <th>Fecha Solicitud</th>
-        <th>Acción</th>
-      </tr>
-    </thead>
-    <tbody id="solicitudesBody">
-      <!-- Solicitudes se cargarán aquí -->
-    </tbody>
-  </table>
-  <p><a href="menu.html">Volver al menú</a></p>
-</div>
+<h2>Solicitudes Pendientes</h2>
+
+<div id="listaSolicitudes"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"; // Reemplaza con tu clave anónima
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(
+    "https://jwcgiuhdugjunndfpdjr.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"
+);
 
-  let currentUser = null;
+// ===============================
+// CARGAR SOLICITUDES PENDIENTES
+// ===============================
+async function cargarSolicitudesPendientes() {
 
-  async function init() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      alert("Debes iniciar sesión primero.");
-      window.location.href = "index.html";
-      return;
-    }
-    currentUser = session.user;
-    cargarSolicitudes();
-  }
-
-  async function cargarSolicitudes() {
-    // Filtrar solicitudes pendientes usando fecha_entrega = null
-    const { data: solicitudes, error } = await supabase
-      .from("solicitudes")
-      .select("*")
-      .eq("email", currentUser.email) // lectura también puede usar email
-      .is("fecha_entrega", null);
-
-    const tbody = document.getElementById("solicitudesBody");
-    tbody.innerHTML = "";
-
-    if (error) {
-      document.getElementById("mensaje").textContent = "❌ Error al cargar solicitudes: " + error.message;
-      return;
-    }
-
-    if (!solicitudes || solicitudes.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No hay solicitudes pendientes</td></tr>`;
-      return;
-    }
-
-    for (const solicitud of solicitudes) {
-      // Obtener materiales asociados a la solicitud
-      const { data: materiales, error: errorMat } = await supabase
-        .from("materiales_solicitados")
+    const { data: solicitudes, error } = await supabaseClient
+        .from("solicitudes")
         .select("*")
-        .eq("id_solicitud", solicitud.id);
-
-      let materialesHTML = "-";
-      if (materiales && materiales.length > 0) {
-        materialesHTML = materiales.map(m => `${m.material} (${m.cantidad})`).join("<br>");
-      }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${solicitud.id}</td>
-        <td>${materialesHTML}</td>
-        <td>${new Date(solicitud.fecha_solicitud).toLocaleDateString()}</td>
-        <td><button class="btn-entregar" onclick="marcarEntregado(${solicitud.id}, this)">Entregado</button></td>
-      `;
-      tbody.appendChild(tr);
-    }
-  }
-
-  async function marcarEntregado(id, boton) {
-    boton.disabled = true;
-    boton.textContent = "Guardando...";
-
-    // Actualizamos solo por ID; RLS validará que sea del usuario logeado
-    const { data, error } = await supabase
-      .from("solicitudes")
-      .update({ 
-        estado: "Entregada",
-        fecha_entrega: new Date().toISOString()
-      })
-      .eq("id", id); // quitar filtro por email para no chocar con RLS
+        .eq("estado", "pendiente")
+        .order("fecha_solicitud", { ascending: true });
 
     if (error) {
-      document.getElementById("mensaje").textContent = "❌ Error al registrar entrega: " + error.message;
-      boton.disabled = false;
-      boton.textContent = "Entregado";
-    } else {
-      boton.textContent = "✅ Entregado";
-      cargarSolicitudes(); // refresca tabla
+        console.error("Error al cargar solicitudes:", error);
+        return;
     }
-  }
 
-  init();
+    const contenedor = document.getElementById("listaSolicitudes");
+    contenedor.innerHTML = "";
+
+    for (const sol of solicitudes) {
+
+        // Cargar materiales asociados
+        const { data: materiales } = await supabaseClient
+            .from("materiales_solicitados")
+            .select("*")
+            .eq("id_solicitud", sol.id);
+
+        let matHTML = "";
+        materiales.forEach(m => {
+            matHTML += `<li>${m.material} — Cant: ${m.cantidad}</li>`;
+        });
+
+        contenedor.innerHTML += `
+            <div style="border:1px solid #ccc;padding:10px;margin:10px;">
+                <p><strong>ID:</strong> ${sol.id}</p>
+                <p><strong>Email:</strong> ${sol.email}</p>
+                <p><strong>Docente:</strong> ${sol.docente}</p>
+                <p><strong>Asignatura:</strong> ${sol.asignatura}</p>
+                <p><strong>Fecha solicitud:</strong> ${sol.fecha_solicitud}</p>
+
+                <p><strong>Materiales solicitados:</strong></p>
+                <ul>${matHTML}</ul>
+
+                <button onclick="entregar(${sol.id})">Entregar</button>
+            </div>
+        `;
+    }
+}
+
+// ===============================
+// ENTREGAR (ACTUALIZA ESTADO + FECHA_ENTREGA)
+// ===============================
+async function entregar(idSolicitud) {
+
+    const fechaHoy = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+    const { error } = await supabaseClient
+        .from("solicitudes")
+        .update({
+            estado: "entregado",
+            fecha_entrega: fechaHoy
+        })
+        .eq("id", idSolicitud);
+
+    if (error) {
+        console.error("Error al registrar entrega:", error);
+        alert("Error al registrar entrega: " + error.message);
+        return;
+    }
+
+    alert("Entrega registrada correctamente.");
+    cargarSolicitudesPendientes();
+}
+
+// Iniciar carga
+cargarSolicitudesPendientes();
+
 </script>
-
 </body>
 </html>
 
