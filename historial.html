@@ -127,7 +127,7 @@
     <div class="filter-box">
         <input type="date" id="desde">
         <input type="date" id="hasta">
-        <button onclick="cargarHistorial()">Buscar</button>
+        <button id="btn-buscar">Buscar</button>
     </div>
 
     <!-- TABLA DE HISTORIAL -->
@@ -142,7 +142,9 @@
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody id="tabla-historial"></tbody>
+        <tbody id="tabla-historial">
+            <!-- Se llenará dinámicamente -->
+        </tbody>
     </table>
 
 </div>
@@ -152,7 +154,6 @@
     <div class="modal-content">
         <span class="close-btn" onclick="cerrarModal()">×</span>
         <div class="modal-header">Materiales Solicitados</div>
-
         <table>
             <thead>
                 <tr>
@@ -160,149 +161,169 @@
                     <th>Cantidad</th>
                 </tr>
             </thead>
-            <tbody id="tabla-materiales"></tbody>
+            <tbody id="modal-body-materiales">
+                <!-- Se llenará dinámicamente -->
+            </tbody>
         </table>
     </div>
 </div>
 
-<script src="supabase.js"></script>
+<!-- SUPABASE CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-    let materialesCache = {}; // Guarda materiales por solicitud
-    let usuario = null;
+  // Crear cliente Supabase inline (sin archivo externo)
+  const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    document.addEventListener("DOMContentLoaded", async () => {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        usuario = user?.email;
-        cargarHistorial();
-    });
+  let usuario = null; // email del usuario
 
-    async function cargarHistorial() {
-        const desde = document.getElementById("desde").value;
-        const hasta = document.getElementById("hasta").value;
+  document.addEventListener("DOMContentLoaded", async () => {
+      // Obtener sesión de usuario
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+          alert("Debes iniciar sesión.");
+          window.location.href = "index.html";
+          return;
+      }
+      usuario = session.user.email;
+      cargarHistorial();
+  });
 
-        let query = supabaseClient
-            .from("solicitudes")
-            .select("*")
-            .eq("email", usuario)
-            .eq("estado", "Entregado");
+  async function cargarHistorial() {
+      const { data: solicitudes, error } = await supabaseClient
+          .from('solicitudes')
+          .select('*')
+          .eq('email', usuario)
+          .eq('estado', 'Entregado')
+          .order('fecha_entrega', { ascending: false });
 
-        if (desde) query = query.gte("fecha_solicitud", desde);
-        if (hasta) query = query.lte("fecha_solicitud", hasta);
+      if (error) {
+          console.error("Error cargando historial:", error.message);
+          return;
+      }
 
-        const { data, error } = await query.order("fecha_solicitud", { ascending: false });
+      const tbody = document.getElementById("tabla-historial");
+      tbody.innerHTML = "";
 
-        if (error) {
-            console.error("Error:", error);
-            return;
-        }
+      solicitudes.forEach(async s => {
+          const { data: materiales, error: errorMat } = await supabaseClient
+              .from('materiales_solicitados')
+              .select('*')
+              .eq('id_solicitud', s.id);
 
-        renderTabla(data);
-    }
+          if (errorMat) {
+              console.error("Error materiales:", errorMat.message);
+          }
 
-    function renderTabla(solicitudes) {
-        const tbody = document.getElementById("tabla-historial");
-        tbody.innerHTML = "";
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+              <td>${s.id}</td>
+              <td>${s.docente}</td>
+              <td>${s.asignatura}</td>
+              <td>${new Date(s.fecha_solicitud).toLocaleDateString()}</td>
+              <td>${new Date(s.fecha_entrega).toLocaleDateString()}</td>
+              <td>
+                  <button class="btn btn-materiales" onclick='verMateriales(${JSON.stringify(materiales)})'>Ver Materiales</button>
+                  <button class="btn btn-repetir" onclick='repetirSolicitud(${s.id})'>Repetir Solicitud</button>
+              </td>
+          `;
+          tbody.appendChild(tr);
+      });
+  }
 
-        solicitudes.forEach(s => {
-            materialesCache[s.id] = null; // Inicializa cache
+  function verMateriales(materiales) {
+      const tbody = document.getElementById("modal-body-materiales");
+      tbody.innerHTML = "";
+      materiales.forEach(m => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${m.material}</td><td>${m.cantidad}</td>`;
+          tbody.appendChild(tr);
+      });
+      document.getElementById("modal-materiales").style.display = "flex";
+  }
 
-            tbody.innerHTML += `
-                <tr>
-                    <td>${s.id}</td>
-                    <td>${s.docente}</td>
-                    <td>${s.asignatura}</td>
-                    <td>${s.fecha_solicitud?.substring(0,10)}</td>
-                    <td>${s.fecha_entrega?.substring(0,10)}</td>
-                    <td>
-                        <button class="btn btn-materiales" onclick="verMateriales(${s.id})">Ver Materiales</button>
-                        <button class="btn btn-repetir" onclick="repetirSolicitud(${s.id})">Repetir Solicitud</button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
+  function cerrarModal() {
+      document.getElementById("modal-materiales").style.display = "none";
+  }
 
-    async function verMateriales(id) {
-        if (!materialesCache[id]) {
-            const { data, error } = await supabaseClient
-                .from("materiales_solicitados")
-                .select("*")
-                .eq("solicitud_id", id);
+  async function repetirSolicitud(id_solicitud) {
+      // Obtener materiales de la solicitud anterior
+      const { data: materiales, error: errorMat } = await supabaseClient
+          .from('materiales_solicitados')
+          .select('*')
+          .eq('id_solicitud', id_solicitud);
 
-            if (error) {
-                console.error("Error cargando materiales:", error);
-                return;
-            }
+      if (errorMat) {
+          console.error("Error materiales:", errorMat.message);
+          return;
+      }
 
-            materialesCache[id] = data;
-        }
+      // Crear nueva solicitud
+      const { data: nueva, error: errorInsert } = await supabaseClient
+          .from('solicitudes')
+          .insert([{
+              email: usuario,
+              docente: materiales[0]?.docente || 'Desconocido',
+              asignatura: materiales[0]?.asignatura || 'Desconocido',
+              fecha_solicitud: new Date().toISOString(),
+              estado: 'Pendiente'
+          }]);
 
-        mostrarModal(materialesCache[id]);
-    }
+      if (errorInsert) {
+          console.error("Error creando solicitud:", errorInsert.message);
+          return;
+      }
 
-    function mostrarModal(materiales) {
-        const tbody = document.getElementById("tabla-materiales");
-        tbody.innerHTML = "";
+      // Insertar materiales en nueva solicitud
+      const nuevaId = nueva[0].id;
+      const { error: errorInsertMat } = await supabaseClient
+          .from('materiales_solicitados')
+          .insert(materiales.map(m => ({
+              id_solicitud: nuevaId,
+              material: m.material,
+              cantidad: m.cantidad
+          })));
 
-        materiales.forEach(m => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${m.material}</td>
-                    <td>${m.cantidad}</td>
-                </tr>
-            `;
-        });
+      if (errorInsertMat) {
+          console.error("Error duplicando materiales:", errorInsertMat.message);
+      } else {
+          alert("✔ Solicitud repetida correctamente.");
+          cargarHistorial();
+      }
+  }
 
-        document.getElementById("modal-materiales").style.display = "flex";
-    }
+  document.getElementById("btn-buscar").addEventListener("click", async () => {
+      const desde = document.getElementById("desde").value;
+      const hasta = document.getElementById("hasta").value;
 
-    function cerrarModal() {
-        document.getElementById("modal-materiales").style.display = "none";
-    }
+      let query = supabaseClient.from('solicitudes').select('*').eq('email', usuario).eq('estado','Entregado');
 
-    async function repetirSolicitud(id) {
-        const { data: original } = await supabaseClient
-            .from("solicitudes")
-            .select("*")
-            .eq("id", id)
-            .single();
+      if(desde) query = query.gte('fecha_entrega', desde);
+      if(hasta) query = query.lte('fecha_entrega', hasta);
 
-        if (!original) return;
+      const { data, error } = await query.order('fecha_entrega',{ascending:false});
+      if(error) return console.error(error);
 
-        const nueva = {
-            email: original.email,
-            docente: original.docente,
-            asignatura: original.asignatura,
-            fecha_solicitud: new Date().toISOString(),
-            estado: "Pendiente"
-        };
-
-        const { data: nuevaSolicitud, error } = await supabaseClient
-            .from("solicitudes")
-            .insert([nueva])
-            .select()
-            .single();
-
-        if (error) {
-            alert("Error repitiendo solicitud");
-            return;
-        }
-
-        const { data: materiales } = await supabaseClient
-            .from("materiales_solicitados")
-            .select("*")
-            .eq("solicitud_id", id);
-
-        const copia = materiales.map(m => ({
-            solicitud_id: nuevaSolicitud.id,
-            material: m.material,
-            cantidad: m.cantidad
-        }));
-
-        await supabaseClient.from("materiales_solicitados").insert(copia);
-
-        alert("Solicitud repetida correctamente");
-    }
+      const tbody = document.getElementById("tabla-historial");
+      tbody.innerHTML = "";
+      data.forEach(s => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+              <td>${s.id}</td>
+              <td>${s.docente}</td>
+              <td>${s.asignatura}</td>
+              <td>${new Date(s.fecha_solicitud).toLocaleDateString()}</td>
+              <td>${new Date(s.fecha_entrega).toLocaleDateString()}</td>
+              <td>
+                  <button class="btn btn-materiales" onclick='alert("Ver Materiales aquí")'>Ver Materiales</button>
+                  <button class="btn btn-repetir" onclick='repetirSolicitud(${s.id})'>Repetir Solicitud</button>
+              </td>
+          `;
+          tbody.appendChild(tr);
+      });
+  });
 </script>
 
 </body>
