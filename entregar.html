@@ -6,92 +6,117 @@
 <title>Entregar Materiales</title>
 
 <style>
+    /* ---- ESTILO GENERAL ---- */
     body {
-        font-family: Arial, sans-serif;
-        background: #f3f4f6;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #e9ecf2;
         margin: 0;
         padding: 0;
+        color: #333;
     }
 
     .container {
         max-width: 900px;
         margin: 40px auto;
         background: white;
-        padding: 25px;
+        padding: 35px;
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border: 1px solid #d0d5dd;
+        box-shadow:
+            0 2px 4px rgba(0,0,0,0.07),
+            0 4px 10px rgba(0,0,0,0.05);
     }
 
     h2 {
         text-align: center;
-        margin-bottom: 20px;
-        color: #333;
+        margin-bottom: 30px;
+        color: #1b1f24;
+        font-size: 26px;
+        font-weight: 600;
+        border-bottom: 2px solid #4a6cf7;
+        padding-bottom: 10px;
     }
 
+    /* ---- CAJA DE CADA SOLICITUD ---- */
     .solicitud-box {
-        margin-bottom: 35px;
-        padding-bottom: 25px;
-        border-bottom: 2px solid #ddd;
+        margin-bottom: 45px;
+        padding: 25px 20px;
+        background: #f9fafc;
+        border-radius: 10px;
+        border: 1px solid #d4d8e0;
     }
 
     .section-title {
-        font-weight: bold;
-        margin-top: 20px;
-        margin-bottom: 10px;
+        font-weight: 600;
+        margin-top: 10px;
+        margin-bottom: 12px;
         font-size: 18px;
-        color: #444;
-        border-left: 4px solid #4CAF50;
-        padding-left: 8px;
+        color: #2d3748;
+        padding-left: 10px;
+        border-left: 4px solid #4a6cf7;
     }
 
+    /* ---- TABLAS ---- */
     table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 10px;
+        margin-top: 8px;
+        font-size: 15px;
     }
 
     table th, table td {
-        border: 1px solid #ddd;
-        padding: 10px;
+        border: 1px solid #d6d6d6;
+        padding: 10px 12px;
         text-align: left;
     }
 
     table th {
-        background: #4CAF50;
+        background: #4a6cf7;
         color: white;
+        font-weight: 600;
     }
 
     .check-col {
         text-align: center;
     }
 
+    /* ---- MENSAJE ERROR ---- */
     .mensaje-error {
         display: none;
-        background: #ffdddd;
+        background: #ffe5e5;
         padding: 12px;
-        color: #b10000;
-        border: 1px solid #ffb4b4;
-        border-radius: 8px;
+        color: #a10000;
+        border: 1px solid #ffb8b8;
+        border-radius: 6px;
         margin-top: 15px;
-        font-size: 15px;
+        font-size: 14px;
     }
 
+    /* ---- BOTÓN ---- */
     .btn-entregar {
         width: 100%;
-        padding: 14px;
-        margin-top: 15px;
+        padding: 15px;
+        margin-top: 18px;
         font-size: 17px;
-        background: #4CAF50;
+        background: #4a6cf7;
         border: none;
         color: white;
-        border-radius: 10px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: 0.2s ease;
         cursor: not-allowed;
-        opacity: 0.5;
+        opacity: 0.45;
+    }
+
+    .btn-entregar:hover {
+        background: #3a59d6;
     }
 
 </style>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
 
 <div class="container">
@@ -201,7 +226,7 @@ async function cargarSolicitudes(email) {
                 btn.style.cursor = 'pointer';
             } else {
                 mensaje.style.display = 'block';
-                btn.style.opacity = 0.5;
+                btn.style.opacity = 0.45;
                 btn.style.cursor = 'not-allowed';
             }
         }
