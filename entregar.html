@@ -100,13 +100,15 @@
 </div>
 
 <script>
-const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co"; // tu URL
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"; // tu clave anónima
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+
+// 👇 YA NO ROMPE EL OBJETO SUPABASE
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Función principal
 async function init() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
 
     if (!session) {
         alert("Debes iniciar sesión.");
@@ -119,7 +121,7 @@ async function init() {
 }
 
 async function cargarSolicitudes(email) {
-    const { data: solicitudes, error } = await supabase
+    const { data: solicitudes, error } = await supabaseClient
         .from('solicitud')
         .select('*')
         .eq('email', email)
@@ -134,8 +136,8 @@ async function cargarSolicitudes(email) {
     container.innerHTML = "";
 
     for (const solicitud of solicitudes) {
-        // Obtener materiales asociados
-        const { data: materiales, error: errorMat } = await supabase
+
+        const { data: materiales, error: errorMat } = await supabaseClient
             .from('materiales_solicitados')
             .select('*')
             .eq('id_solicitud', solicitud.id);
@@ -145,12 +147,10 @@ async function cargarSolicitudes(email) {
             continue;
         }
 
-        // Crear HTML
         const box = document.createElement('div');
         box.classList.add('solicitud-box');
         box.dataset.id = solicitud.id;
 
-        // Datos de la solicitud
         box.innerHTML = `
             <div class="section-title">Datos de la Solicitud</div>
             <table>
@@ -188,7 +188,6 @@ async function cargarSolicitudes(email) {
 
         container.appendChild(box);
 
-        // Agregar funcionalidad de checklist
         const checkboxes = box.querySelectorAll('.chk');
         const mensaje = box.querySelector('.mensaje-error');
         const btn = box.querySelector('.btn-entregar');
@@ -196,6 +195,7 @@ async function cargarSolicitudes(email) {
         function validarChecklist() {
             let completos = true;
             checkboxes.forEach(chk => { if (!chk.checked) completos = false; });
+
             if (completos) {
                 mensaje.style.display = 'none';
                 btn.style.opacity = 1;
@@ -210,12 +210,10 @@ async function cargarSolicitudes(email) {
         checkboxes.forEach(chk => chk.addEventListener('change', validarChecklist));
 
         btn.addEventListener('click', async () => {
-            // Verificar checklist antes
             let todosMarcados = [...checkboxes].every(c => c.checked);
             if (!todosMarcados) return;
 
-            // Actualizar solicitud en Supabase
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseClient
                 .from('solicitud')
                 .update({
                     estado: 'Entregado',
@@ -229,7 +227,7 @@ async function cargarSolicitudes(email) {
             }
 
             alert("✔ Entrega registrada correctamente.");
-            cargarSolicitudes(email); // refrescar
+            cargarSolicitudes(email);
         });
     }
 }
