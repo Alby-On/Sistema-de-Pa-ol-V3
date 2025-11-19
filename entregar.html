@@ -17,30 +17,43 @@
 
     .container {
         max-width: 900px;
-        margin: 40px auto;
+        margin: 20px auto;
         background: white;
-        padding: 35px;
+        padding: 25px;
         border-radius: 12px;
         border: 1px solid #d0d5dd;
-        box-shadow:
-            0 2px 4px rgba(0,0,0,0.07),
-            0 4px 10px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.07);
     }
 
     h2 {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
         color: #1b1f24;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 600;
-        border-bottom: 2px solid #4a6cf7;
-        padding-bottom: 10px;
+    }
+
+    /* ---- BOTÓN VOLVER ---- */
+    .btn-volver {
+        background: #4a6cf7;
+        color: white;
+        padding: 12px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 15px;
+    }
+
+    .btn-volver:hover {
+        background: #3a59d6;
     }
 
     /* ---- CAJA DE CADA SOLICITUD ---- */
     .solicitud-box {
-        margin-bottom: 45px;
-        padding: 25px 20px;
+        margin-bottom: 35px;
+        padding: 20px;
         background: #f9fafc;
         border-radius: 10px;
         border: 1px solid #d4d8e0;
@@ -48,25 +61,30 @@
 
     .section-title {
         font-weight: 600;
-        margin-top: 10px;
-        margin-bottom: 12px;
-        font-size: 18px;
+        margin: 10px 0;
+        font-size: 17px;
         color: #2d3748;
         padding-left: 10px;
         border-left: 4px solid #4a6cf7;
     }
 
     /* ---- TABLAS ---- */
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+
     table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 8px;
-        font-size: 15px;
+        font-size: 14px;
+        min-width: 400px;
     }
 
     table th, table td {
         border: 1px solid #d6d6d6;
-        padding: 10px 12px;
+        padding: 10px;
         text-align: left;
     }
 
@@ -97,7 +115,7 @@
         width: 100%;
         padding: 15px;
         margin-top: 18px;
-        font-size: 17px;
+        font-size: 16px;
         background: #4a6cf7;
         border: none;
         color: white;
@@ -112,6 +130,31 @@
         background: #3a59d6;
     }
 
+    /* ---- MENSAJE SIN SOLICITUDES ---- */
+    .no-solicitudes {
+        text-align: center;
+        padding: 25px;
+        font-size: 18px;
+        background: #f1f3f8;
+        border-radius: 10px;
+        border: 1px solid #ccd1dd;
+        margin-top: 20px;
+        color: #444;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+        h2 {
+            font-size: 20px;
+        }
+        .container {
+            padding: 18px;
+        }
+        .btn-volver {
+            width: 100%;
+            text-align: center;
+        }
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -120,6 +163,9 @@
 <body>
 
 <div class="container">
+
+    <a href="menu.html" class="btn-volver">⬅ Volver al Menú</a>
+
     <h2>Entregar Materiales</h2>
     <div id="solicitudes-container"></div>
 </div>
@@ -159,6 +205,12 @@ async function cargarSolicitudes(email) {
     const container = document.getElementById('solicitudes-container');
     container.innerHTML = "";
 
+    /* ← NUEVA FUNCIÓN: mostrar mensaje si no hay solicitudes */
+    if (solicitudes.length === 0) {
+        container.innerHTML = `<div class="no-solicitudes">✔ No tienes solicitudes por entregar.</div>`;
+        return;
+    }
+
     for (const solicitud of solicitudes) {
 
         const { data: materiales, error: errorMat } = await supabaseClient
@@ -166,10 +218,7 @@ async function cargarSolicitudes(email) {
             .select('*')
             .eq('id_solicitud', solicitud.id);
 
-        if (errorMat) {
-            console.error("Error materiales:", errorMat.message);
-            continue;
-        }
+        if (errorMat) continue;
 
         const box = document.createElement('div');
         box.classList.add('solicitud-box');
@@ -177,6 +226,8 @@ async function cargarSolicitudes(email) {
 
         box.innerHTML = `
             <div class="section-title">Datos de la Solicitud</div>
+            
+            <div class="table-wrapper">
             <table>
                 <tr><th>ID Solicitud</th><td>${solicitud.id}</td></tr>
                 <tr><th>Email</th><td>${solicitud.email}</td></tr>
@@ -185,8 +236,10 @@ async function cargarSolicitudes(email) {
                 <tr><th>Fecha Solicitud</th><td>${new Date(solicitud.fecha_solicitud).toLocaleDateString()}</td></tr>
                 <tr><th>Estado</th><td>${solicitud.estado}</td></tr>
             </table>
+            </div>
 
             <div class="section-title">Materiales Solicitados</div>
+            <div class="table-wrapper">
             <table>
                 <thead>
                     <tr>
@@ -205,6 +258,7 @@ async function cargarSolicitudes(email) {
                     `).join('')}
                 </tbody>
             </table>
+            </div>
 
             <div class="mensaje-error">Debes seleccionar todos los materiales antes de poder continuar con la entrega.</div>
             <button class="btn-entregar">Entregar Materiales</button>
@@ -217,8 +271,7 @@ async function cargarSolicitudes(email) {
         const btn = box.querySelector('.btn-entregar');
 
         function validarChecklist() {
-            let completos = true;
-            checkboxes.forEach(chk => { if (!chk.checked) completos = false; });
+            let completos = [...checkboxes].every(c => c.checked);
 
             if (completos) {
                 mensaje.style.display = 'none';
@@ -261,5 +314,6 @@ init();
 
 </body>
 </html>
+
 
 
