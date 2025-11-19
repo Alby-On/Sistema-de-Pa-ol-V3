@@ -15,9 +15,9 @@
 
     .container {
         max-width: 1100px;
-        margin: 40px auto;
+        margin: 20px auto;
         background: white;
-        padding: 25px;
+        padding: 20px;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
@@ -25,13 +25,33 @@
     h2 {
         text-align: center;
         color: #333;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
+        font-size: 22px;
     }
 
+    /* BOTÓN VOLVER */
+    .btn-volver {
+        display: inline-block;
+        padding: 10px 16px;
+        background: #4a6cf7;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    .btn-volver:hover {
+        background: #3a59d6;
+    }
+
+    /* FILTROS */
     .filter-box {
         display: flex;
-        gap: 15px;
-        margin-bottom: 20px;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
     }
 
     .filter-box input, .filter-box button {
@@ -39,6 +59,8 @@
         font-size: 15px;
         border-radius: 6px;
         border: 1px solid #ccc;
+        width: 100%;
+        max-width: 250px;
     }
 
     .filter-box button {
@@ -48,10 +70,16 @@
         cursor: pointer;
     }
 
+    /* TABLA RESPONSIVA */
+    .tabla-wrapper {
+        overflow-x: auto;
+    }
+
     table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
+        min-width: 700px;
     }
 
     table th {
@@ -59,19 +87,24 @@
         color: white;
         padding: 10px;
         text-align: left;
+        font-size: 14px;
     }
 
     table td {
         border: 1px solid #ddd;
         padding: 10px;
+        font-size: 14px;
     }
 
     .btn {
-        padding: 8px 12px;
+        padding: 8px 10px;
         border: none;
         border-radius: 6px;
         cursor: pointer;
         font-size: 13px;
+        margin: 2px 0;
+        width: 100%;
+        max-width: 140px;
     }
 
     .btn-materiales {
@@ -84,6 +117,17 @@
         color: white;
     }
 
+    /* MENSAJE */
+    .mensaje-vacio {
+        text-align: center;
+        padding: 15px;
+        background: #fff4e6;
+        border: 1px solid #ffd7b3;
+        color: #b95c00;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
+
     /* MODAL */
     .modal {
         display: none;
@@ -92,11 +136,13 @@
         background: rgba(0,0,0,0.6);
         justify-content: center;
         align-items: center;
+        padding: 20px;
     }
 
     .modal-content {
         background: white;
-        width: 500px;
+        width: 100%;
+        max-width: 500px;
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -115,11 +161,14 @@
         font-weight: bold;
         color: #900;
     }
+
 </style>
 </head>
 <body>
 
 <div class="container">
+
+    <a href="menu.html" class="btn-volver">⬅ Volver al menú</a>
 
     <h2>Historial de Solicitudes Entregadas</h2>
 
@@ -131,21 +180,27 @@
     </div>
 
     <!-- TABLA DE HISTORIAL -->
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Docente</th>
-                <th>Asignatura</th>
-                <th>Fecha Solicitud</th>
-                <th>Fecha Entrega</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="tabla-historial">
-            <!-- Se llenará dinámicamente -->
-        </tbody>
-    </table>
+    <div class="tabla-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Docente</th>
+                    <th>Asignatura</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Fecha Entrega</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-historial">
+                <!-- Se llena dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="sin-datos" class="mensaje-vacio" style="display:none;">
+        No tienes solicitudes entregadas.
+    </div>
 
 </div>
 
@@ -161,169 +216,167 @@
                     <th>Cantidad</th>
                 </tr>
             </thead>
-            <tbody id="modal-body-materiales">
-                <!-- Se llenará dinámicamente -->
-            </tbody>
+            <tbody id="modal-body-materiales"></tbody>
         </table>
     </div>
 </div>
 
-<!-- SUPABASE CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  // Crear cliente Supabase inline (sin archivo externo)
-  const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ---------------------- CLIENTE SUPABASE ---------------------- */
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
 
-  let usuario = null; // email del usuario
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  document.addEventListener("DOMContentLoaded", async () => {
-      // Obtener sesión de usuario
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) {
-          alert("Debes iniciar sesión.");
-          window.location.href = "index.html";
-          return;
-      }
-      usuario = session.user.email;
-      cargarHistorial();
-  });
+let usuario = null;
 
-  async function cargarHistorial() {
-      const { data: solicitudes, error } = await supabaseClient
-          .from('solicitudes')
-          .select('*')
-          .eq('email', usuario)
-          .eq('estado', 'Entregado')
-          .order('fecha_entrega', { ascending: false });
+document.addEventListener("DOMContentLoaded", async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
 
-      if (error) {
-          console.error("Error cargando historial:", error.message);
-          return;
-      }
+    if (!session) {
+        alert("Debes iniciar sesión.");
+        window.location.href = "index.html";
+        return;
+    }
 
-      const tbody = document.getElementById("tabla-historial");
-      tbody.innerHTML = "";
+    usuario = session.user.email;
+    cargarHistorial();
+});
 
-      solicitudes.forEach(async s => {
-          const { data: materiales, error: errorMat } = await supabaseClient
-              .from('materiales_solicitados')
-              .select('*')
-              .eq('id_solicitud', s.id);
+/* ---------------------- CARGAR HISTORIAL ---------------------- */
+async function cargarHistorial() {
+    const { data: solicitudes, error } = await supabaseClient
+        .from('solicitudes')
+        .select('*')
+        .eq('email', usuario)
+        .eq('estado', 'Entregado')
+        .order('fecha_entrega', { ascending: false });
 
-          if (errorMat) {
-              console.error("Error materiales:", errorMat.message);
-          }
+    const tbody = document.getElementById("tabla-historial");
+    const sinDatos = document.getElementById("sin-datos");
+    tbody.innerHTML = "";
 
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-              <td>${s.id}</td>
-              <td>${s.docente}</td>
-              <td>${s.asignatura}</td>
-              <td>${new Date(s.fecha_solicitud).toLocaleDateString()}</td>
-              <td>${new Date(s.fecha_entrega).toLocaleDateString()}</td>
-              <td>
-                  <button class="btn btn-materiales" onclick='verMateriales(${JSON.stringify(materiales)})'>Ver Materiales</button>
-                  <button class="btn btn-repetir" onclick='repetirSolicitud(${s.id})'>Repetir Solicitud</button>
-              </td>
-          `;
-          tbody.appendChild(tr);
-      });
-  }
+    if (!solicitudes || solicitudes.length === 0) {
+        sinDatos.style.display = "block";
+        return;
+    }
 
-  function verMateriales(materiales) {
-      const tbody = document.getElementById("modal-body-materiales");
-      tbody.innerHTML = "";
-      materiales.forEach(m => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${m.material}</td><td>${m.cantidad}</td>`;
-          tbody.appendChild(tr);
-      });
-      document.getElementById("modal-materiales").style.display = "flex";
-  }
+    sinDatos.style.display = "none";
 
-  function cerrarModal() {
-      document.getElementById("modal-materiales").style.display = "none";
-  }
+    solicitudes.forEach(async s => {
+        const { data: materiales } = await supabaseClient
+            .from('materiales_solicitados')
+            .select('*')
+            .eq('id_solicitud', s.id);
 
-  async function repetirSolicitud(id_solicitud) {
-      // Obtener materiales de la solicitud anterior
-      const { data: materiales, error: errorMat } = await supabaseClient
-          .from('materiales_solicitados')
-          .select('*')
-          .eq('id_solicitud', id_solicitud);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${s.id}</td>
+            <td>${s.docente}</td>
+            <td>${s.asignatura}</td>
+            <td>${new Date(s.fecha_solicitud).toLocaleDateString()}</td>
+            <td>${new Date(s.fecha_entrega).toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-materiales" onclick='verMateriales(${JSON.stringify(materiales)})'>Ver</button>
+                <button class="btn btn-repetir" onclick='repetirSolicitud(${s.id})'>Repetir</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
-      if (errorMat) {
-          console.error("Error materiales:", errorMat.message);
-          return;
-      }
+/* ------------------ MODAL MATERIALES ------------------ */
+function verMateriales(materiales) {
+    const tbody = document.getElementById("modal-body-materiales");
+    tbody.innerHTML = "";
+    materiales.forEach(m => {
+        tbody.innerHTML += `<tr><td>${m.material}</td><td>${m.cantidad}</td></tr>`;
+    });
+    document.getElementById("modal-materiales").style.display = "flex";
+}
 
-      // Crear nueva solicitud
-      const { data: nueva, error: errorInsert } = await supabaseClient
-          .from('solicitudes')
-          .insert([{
-              email: usuario,
-              docente: materiales[0]?.docente || 'Desconocido',
-              asignatura: materiales[0]?.asignatura || 'Desconocido',
-              fecha_solicitud: new Date().toISOString(),
-              estado: 'Pendiente'
-          }]);
+function cerrarModal() {
+    document.getElementById("modal-materiales").style.display = "none";
+}
 
-      if (errorInsert) {
-          console.error("Error creando solicitud:", errorInsert.message);
-          return;
-      }
+/* ------------------ REPETIR SOLICITUD ------------------ */
+async function repetirSolicitud(id_solicitud) {
+    const { data: materiales } = await supabaseClient
+        .from('materiales_solicitados')
+        .select('*')
+        .eq('id_solicitud', id_solicitud);
 
-      // Insertar materiales en nueva solicitud
-      const nuevaId = nueva[0].id;
-      const { error: errorInsertMat } = await supabaseClient
-          .from('materiales_solicitados')
-          .insert(materiales.map(m => ({
-              id_solicitud: nuevaId,
-              material: m.material,
-              cantidad: m.cantidad
-          })));
+    const { data: nueva } = await supabaseClient
+        .from('solicitudes')
+        .insert([{
+            email: usuario,
+            docente: "Repetida",
+            asignatura: "Repetida",
+            fecha_solicitud: new Date().toISOString(),
+            estado: 'Pendiente'
+        }])
+        .select();
 
-      if (errorInsertMat) {
-          console.error("Error duplicando materiales:", errorInsertMat.message);
-      } else {
-          alert("✔ Solicitud repetida correctamente.");
-          cargarHistorial();
-      }
-  }
+    const nuevaId = nueva[0].id;
 
-  document.getElementById("btn-buscar").addEventListener("click", async () => {
-      const desde = document.getElementById("desde").value;
-      const hasta = document.getElementById("hasta").value;
+    await supabaseClient
+        .from('materiales_solicitados')
+        .insert(materiales.map(m => ({
+            id_solicitud: nuevaId,
+            material: m.material,
+            cantidad: m.cantidad
+        })));
 
-      let query = supabaseClient.from('solicitudes').select('*').eq('email', usuario).eq('estado','Entregado');
+    alert("✔ Solicitud repetida.");
+    cargarHistorial();
+}
 
-      if(desde) query = query.gte('fecha_entrega', desde);
-      if(hasta) query = query.lte('fecha_entrega', hasta);
+/* ------------------ FILTRO FECHAS ------------------ */
+document.getElementById("btn-buscar").addEventListener("click", async () => {
+    const desde = document.getElementById("desde").value;
+    const hasta = document.getElementById("hasta").value;
 
-      const { data, error } = await query.order('fecha_entrega',{ascending:false});
-      if(error) return console.error(error);
+    let query = supabaseClient
+        .from('solicitudes')
+        .select('*')
+        .eq('email', usuario)
+        .eq('estado', 'Entregado');
 
-      const tbody = document.getElementById("tabla-historial");
-      tbody.innerHTML = "";
-      data.forEach(s => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-              <td>${s.id}</td>
-              <td>${s.docente}</td>
-              <td>${s.asignatura}</td>
-              <td>${new Date(s.fecha_solicitud).toLocaleDateString()}</td>
-              <td>${new Date(s.fecha_entrega).toLocaleDateString()}</td>
-              <td>
-                  <button class="btn btn-materiales" onclick='alert("Ver Materiales aquí")'>Ver Materiales</button>
-                  <button class="btn btn-repetir" onclick='repetirSolicitud(${s.id})'>Repetir Solicitud</button>
-              </td>
-          `;
-          tbody.appendChild(tr);
-      });
-  });
+    if (desde) query = query.gte('fecha_entrega', desde);
+    if (hasta) query = query.lte('fecha_entrega', hasta);
+
+    const { data } = await query.order('fecha_entrega', { ascending: false });
+
+    const tbody = document.getElementById("tabla-historial");
+    const sinDatos = document.getElementById("sin-datos");
+
+    tbody.innerHTML = "";
+
+    if (data.length === 0) {
+        sinDatos.style.display = "block";
+        return;
+    }
+
+    sinDatos.style.display = "none";
+
+    data.forEach(s => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${s.id}</td>
+            <td>${s.docente}</td>
+            <td>${s.asignatura}</td>
+            <td>${new Date(s.fecha_solicitud).toLocaleDateString()}</td>
+            <td>${new Date(s.fecha_entrega).toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-materiales">Ver</button>
+                <button class="btn btn-repetir" onclick='repetirSolicitud(${s.id})'>Repetir</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+});
 </script>
 
 </body>
