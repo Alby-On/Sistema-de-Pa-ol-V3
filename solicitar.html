@@ -3,61 +3,189 @@
 <head>
 <meta charset="UTF-8">
 <title>Solicitud de Materiales</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+    /* Variables de Color (Mismas que en las vistas anteriores) */
+    :root {
+        --color-primary: #004d99; /* Azul marino/institucional */
+        --color-secondary: #28a745; /* Verde para enviar/éxito */
+        --color-info: #17a2b8; /* Turquesa para añadir */
+        --color-danger: #dc3545; /* Rojo para eliminar */
+        --color-muted: #6c757d; /* Gris para volver */
+        --color-background: #eef1f5; /* Fondo claro y suave */
+        --color-card: #ffffff; /* Fondo de las cajas */
+        --color-text: #333333; /* Texto oscuro */
+        --color-border: #cccccc;
+    }
+
+    /* Estilos Generales */
     body {
-        font-family: Arial, sans-serif;
-        background: #f0f2f5;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--color-background);
         margin: 0;
-        padding: 20px;
+        padding: 0;
+        color: var(--color-text);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
     }
+
+    /* Caja Principal (Card) */
     .box {
-        background: white;
-        padding: 20px;
-        max-width: 750px;
-        margin: 20px auto;
-        border-radius: 12px;
-        box-shadow: 0 0 15px rgba(0,0,0,0.15);
-    }
-    h2, h3 { text-align: center; margin-bottom: 15px; }
-    label { font-weight: bold; display: block; margin-top: 10px; }
-    input, select {
+        background: var(--color-card);
+        padding: 25px;
         width: 100%;
-        padding: 10px;
-        font-size: 15px;
-        margin-top: 5px;
-        margin-bottom: 15px;
-        border-radius: 6px;
-        border: 1px solid #aaa;
+        max-width: 780px; /* Ancho un poco mayor para la tabla */
+        margin: 20px 15px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         box-sizing: border-box;
     }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 10px; }
-    th { background: #007bff; color: white; text-align: center; }
-    td input { width: 100%; padding: 7px; font-size: 14px; box-sizing: border-box; }
+
+    /* Encabezados */
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: var(--color-primary);
+        font-size: 1.8em;
+        border-bottom: 2px solid var(--color-primary);
+        padding-bottom: 10px;
+    }
+    h3 { 
+        text-align: center; 
+        margin-top: 30px;
+        margin-bottom: 15px;
+        color: var(--color-primary);
+        font-size: 1.3em;
+    }
+
+    /* Labels e Inputs de Formulario */
+    label { 
+        font-weight: 600; 
+        display: block; 
+        margin-top: 15px; 
+        color: var(--color-text);
+    }
+    input, select {
+        width: 100%;
+        padding: 12px; /* Aumentado para mejor tacto en móvil */
+        font-size: 1em;
+        margin-top: 8px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        border: 1px solid var(--color-border);
+        box-sizing: border-box;
+        transition: border-color 0.3s;
+    }
+    input:focus, select:focus {
+        border-color: var(--color-primary);
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 77, 153, 0.2);
+    }
+
+    /* Tabla de Materiales */
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        margin-top: 15px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* Sombra sutil a la tabla */
+    }
+    th, td { 
+        border: 1px solid #e0e0e0; /* Borde más claro */
+        padding: 12px; 
+        text-align: left; /* Alineación a la izquierda para el material */
+    }
+    th { 
+        background: var(--color-primary); 
+        color: var(--color-card); 
+        text-align: center;
+        text-transform: uppercase;
+        font-size: 0.9em;
+    }
+    #tabla tbody tr:nth-child(even) {
+        background-color: #f8f8f8; /* Cebra para mejor lectura */
+    }
+    td input { 
+        padding: 8px; 
+        font-size: 1em; 
+        border: 1px solid #d0d0d0;
+        margin: 0;
+    }
+    #tabla td:nth-child(2) { /* Columna de Cantidad */
+        width: 25%;
+        text-align: center;
+    }
+
+    /* Botones de Acción */
     .btnAdd, .btnRemove, .btnEnviar, .btnVolver {
         width: 100%;
-        padding: 12px;
+        padding: 14px;
         border: none;
         border-radius: 6px;
-        font-size: 16px;
+        font-size: 1.1em;
+        font-weight: bold;
         cursor: pointer;
-        margin-top: 10px;
+        margin-top: 12px;
+        transition: background-color 0.3s, opacity 0.3s;
     }
-    .btnAdd { background: #17a2b8; color: white; }
-    .btnRemove { background: #dc3545; color: white; }
-    .btnEnviar { background: #28a745; color: white; }
-    .btnVolver { background: #6c757d; color: white; }
+
+    .btnAdd { 
+        background: var(--color-info); 
+        color: white; 
+    }
+    .btnAdd:hover { background: #138496; }
+
+    .btnRemove { 
+        background: var(--color-danger); 
+        color: white; 
+    }
+    .btnRemove:hover { background: #c82333; }
+
+    .btnEnviar { 
+        background: var(--color-secondary); 
+        color: white; 
+        margin-top: 25px; /* Separación de los botones de la tabla */
+    }
+    .btnEnviar:hover { background: #1e7e34; }
+
+    .btnVolver { 
+        background: var(--color-muted); 
+        color: white; 
+    }
+    .btnVolver:hover { background: #5a6268; }
+
+    /* Estilos para Móviles */
+    @media (max-width: 600px) {
+        .box {
+            margin: 10px;
+            padding: 15px;
+        }
+        h2 {
+            font-size: 1.6em;
+        }
+        th, td {
+            padding: 8px;
+            font-size: 0.9em;
+        }
+        td input {
+            padding: 6px;
+        }
+        .btnAdd, .btnRemove, .btnEnviar, .btnVolver {
+            font-size: 1em;
+            padding: 12px;
+        }
+    }
 </style>
 </head>
 <body>
 
 <div class="box">
-    <h2>Solicitud de Materiales</h2>
+    <h2>Solicitud de Materiales 📋</h2>
 
-    <label>Docente a cargo:</label>
+    <label for="docente">👨‍🏫 Docente a cargo:</label>
     <select id="docente">
         <option value="">Seleccione un docente</option>
         <option>AARÓN EDUARDO SEPÚLVEDA MEDINA</option>
@@ -84,7 +212,7 @@
         <option>OTROS DOCENTES</option>
     </select>
 
-    <label>Asignatura:</label>
+    <label for="asignatura">📚 Asignatura:</label>
     <input type="text" id="asignatura" placeholder="Ej: Instalaciones Eléctricas II">
 
     <h3>Materiales Solicitados</h3>
@@ -93,7 +221,7 @@
         <thead>
             <tr>
                 <th>Material / Equipo</th>
-                <th>Cantidad</th>
+                <th style="width: 25%;">Cantidad</th>
             </tr>
         </thead>
         <tbody id="tbody">
@@ -106,8 +234,9 @@
 
     <button class="btnAdd" onclick="addRow()">➕ Agregar Material</button>
     <button class="btnRemove" onclick="removeRow()">➖ Eliminar Último</button>
-    <button class="btnEnviar" onclick="enviar()">Enviar Solicitud</button>
-    <button class="btnVolver" onclick="location.href='menu.html'">Volver</button>
+    
+    <button class="btnEnviar" onclick="enviar()">📤 Enviar Solicitud</button>
+    <button class="btnVolver" onclick="location.href='menu.html'">↩️ Volver al Menú</button>
 </div>
 
 <script>
@@ -120,7 +249,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const user = JSON.parse(localStorage.getItem("currentUser"));
 if (!user) window.location.href = "index.html";
 
-/* ➕ Añadir fila */
+/* ➕ Añadir fila (LÓGICA INTACTA) */
 function addRow() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -129,14 +258,14 @@ function addRow() {
     document.getElementById("tbody").appendChild(tr);
 }
 
-/* ➖ Eliminar fila */
+/* ➖ Eliminar fila (LÓGICA INTACTA) */
 function removeRow() {
     const tbody = document.getElementById("tbody");
     if (tbody.rows.length > 1) tbody.deleteRow(tbody.rows.length - 1);
     else alert("Debe haber al menos un material.");
 }
 
-/* 📤 Enviar Solicitud */
+/* 📤 Enviar Solicitud (LÓGICA INTACTA) */
 async function enviar() {
     const btn = document.querySelector(".btnEnviar");
     btn.disabled = true;
@@ -201,4 +330,3 @@ function finishError(msg) {
 
 </body>
 </html>
-
