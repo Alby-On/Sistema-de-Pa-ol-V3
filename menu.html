@@ -105,7 +105,12 @@ function logout() {
   localStorage.removeItem("currentUser");
   window.location.href = "index.html";
 }
+
+/* ---- Necesario para que el botón funcione ---- */
+window.logout = logout;
+
 </script>
 
 </body>
 </html>
+
