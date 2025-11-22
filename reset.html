@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Restablecer Contraseña</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --color-primary: #004d99;
+            --color-secondary: #28a745;
+            --color-background: #eef1f5;
+            --color-card: #ffffff;
+            --color-text: #333333;
+            --color-border: #cccccc;
+            --color-error: #dc3545;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--color-background);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--color-text);
+        }
+
+        .box {
+            background: var(--color-card);
+            padding: 25px;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--color-primary);
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0 18px;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            font-size: 1em;
+            background-color: #f9f9f9;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            background: var(--color-primary);
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #msg {
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px;
+            border-radius: 5px;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            text-decoration: none;
+            color: var(--color-primary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>Restablecer Contraseña</h2>
+
+    <div id="formSection">
+        <input type="password" id="newPass" placeholder="🔒 Nueva contraseña">
+        <button onclick="resetPass()">Guardar nueva contraseña</button>
+    </div>
+
+    <div id="msg"></div>
+
+    <a href="index.html">Volver al inicio</a>
+</div>
+
+<script>
+// ------------------------------
+// SUPABASE CONFIG
+// ------------------------------
+const supabaseClient = supabase.createClient(
+    "https://jwcgiuhdugjunndfpdjr.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"
+);
+
+// ------------------------------
+// VALIDAR QUE EL ENLACE ES VÁLIDO
+// ------------------------------
+async function checkRecovery() {
+    const hash = window.location.hash;
+
+    if (!hash.includes("type=recovery")) {
+        document.getElementById("formSection").innerHTML =
+            "<p style='text-align:center;color:red;'>El enlace no es válido.</p>";
+        return;
+    }
+}
+checkRecovery();
+
+// ------------------------------
+// RESTABLECER CONTRASEÑA
+// ------------------------------
+async function resetPass() {
+    const newPassword = document.getElementById("newPass").value.trim();
+    const msg = document.getElementById("msg");
+
+    if (!newPassword) {
+        msg.textContent = "⚠️ Ingrese una nueva contraseña.";
+        msg.style.color = "red";
+        msg.style.background = "#ffdddd";
+        return;
+    }
+
+    // Actualizar contraseña usando el token del enlace
+    const { error } = await supabaseClient.auth.updateUser({
+        password: newPassword
+    });
+
+    if (error) {
+        msg.textContent = "❌ Error: " + error.message;
+        msg.style.color = "red";
+        msg.style.background = "#ffdddd";
+        return;
+    }
+
+    msg.textContent = "✅ Contraseña actualizada correctamente.";
+    msg.style.color = "green";
+    msg.style.background = "#ddffdd";
+
+    setTimeout(() => {
+        window.location.href = "index.html";
+    }, 1500);
+}
+</script>
+
+</body>
+</html>
