@@ -73,17 +73,15 @@
 const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// 👇 Crear cliente primero
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ========================================
-// Capturar tokens del magic link
-// ========================================
 async function init() {
   const hash = window.location.hash;
   const msg = document.getElementById("msg");
 
   if (!hash) {
-    msg.textContent = "No se detectó enlace válido. Abre el link enviado a tu correo.";
+    msg.textContent = "No se detectó enlace válido.";
     msg.style.color = "red";
     return;
   }
@@ -98,8 +96,7 @@ async function init() {
     return;
   }
 
-  // Establecer sesión temporal con el magic link
-  const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+  const { error } = await supabaseClient.auth.setSession({ access_token, refresh_token });
   if (error) {
     msg.textContent = "Error al iniciar sesión desde el enlace.";
     msg.style.color = "red";
@@ -109,9 +106,6 @@ async function init() {
 
 init();
 
-// ========================================
-// Cambiar contraseña
-// ========================================
 async function cambiarPassword() {
   const nuevaPass = document.getElementById("nuevaPass").value;
   const msg = document.getElementById("msg");
@@ -122,7 +116,7 @@ async function cambiarPassword() {
     return;
   }
 
-  const { error } = await supabase.auth.updateUser({ password: nuevaPass });
+  const { error } = await supabaseClient.auth.updateUser({ password: nuevaPass });
   if (error) {
     msg.textContent = "Error al actualizar contraseña: " + error.message;
     msg.style.color = "red";
