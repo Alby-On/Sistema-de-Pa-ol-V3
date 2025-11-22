@@ -67,10 +67,11 @@
 <script>
 const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function enviarCorreo() {
-    const email = document.getElementById("correo").value;
+    const email = document.getElementById("email").value;
     const msg = document.getElementById("msg");
 
     if (!email) {
@@ -79,9 +80,13 @@ async function enviarCorreo() {
         return;
     }
 
-    // 🔥 Método compatible con Supabase v2 + CDN
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://alby-on.github.io/Sistema_panol_v3/reset.html"
+    // 🔥 Método compatible 100% con CDN + Supabase v2
+    const { data, error } = await supabaseClient.auth.signInWithOtp({
+        email: email,
+        options: {
+            emailRedirectTo: "https://alby-on.github.io/Sistema_panol_v3/reset.html",
+            shouldCreateUser: false
+        }
     });
 
     if (error) {
@@ -97,3 +102,4 @@ async function enviarCorreo() {
 
 </body>
 </html>
+
