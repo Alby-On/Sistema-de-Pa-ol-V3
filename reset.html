@@ -10,8 +10,9 @@
     <style>
         /* Variables de Color (Consistencia Institucional) */
         :root {
-            --color-primary: #004d99; /* Azul marino/institucional */
-            --color-background: #eef1f5; /* Fondo claro y suave */
+            --color-primary: #004d99; /* Azul marino/institucional (Antes: #007bff) */
+            --color-secondary: #6c757d; /* Gris para acciones secundarias */
+            --color-background: #eef1f5; /* Fondo claro y suave (Antes: #f5f5f5) */
             --color-card: #ffffff; /* Fondo de la tarjeta */
             --color-text: #333333;
             --color-border: #cccccc;
@@ -73,12 +74,11 @@
             box-shadow: 0 0 0 2px rgba(0, 77, 153, 0.2);
         }
 
-        /* ---- BOTÓN ---- */
+        /* ---- BOTONES (Primario y Secundario) ---- */
         button {
             width: 100%;
-            margin-top: 25px;
+            margin-top: 15px;
             padding: 12px;
-            background: var(--color-primary);
             color: white;
             border: none;
             border-radius: 6px;
@@ -88,8 +88,23 @@
             transition: background-color 0.3s;
         }
 
-        button:hover {
+        /* Botón Principal (Actualizar Contraseña) */
+        button:not(.btn-secondary) {
+            background: var(--color-primary);
+        }
+
+        button:not(.btn-secondary):hover {
             background: #003a73;
+        }
+        
+        /* Botón Secundario (Volver al Login) */
+        .btn-secondary {
+            background: var(--color-secondary); /* Gris institucional */
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
         }
 
         /* ---- MENSAJE DE ESTADO ---- */
@@ -104,7 +119,7 @@
             box-sizing: border-box;
         }
 
-        /* Estilos específicos para mensajes (JavaScript manejará las clases) */
+        /* Estilos específicos para mensajes (JavaScript) */
         .msg-error {
             color: var(--color-danger);
             background: #ffe5e5;
@@ -134,6 +149,9 @@
 
         <input type="password" id="nuevaPass" placeholder="Nueva contraseña (mín. 6 caracteres)" />
         <button onclick="cambiarPassword()">Actualizar Contraseña</button>
+
+        <button class="btn-secondary" onclick="irLogin()">Volver al Inicio de Sesión</button>
+
         <p id="msg"></p>
     </div>
 
@@ -141,18 +159,18 @@
 const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
 
-// 👇 Crear cliente primero
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Función auxiliar para mostrar mensajes (añadida para consistencia)
+function showMessage(text, isError = false) {
+    const msg = document.getElementById("msg");
+    msg.textContent = isError ? "❌ " + text : "✅ " + text;
+    msg.className = isError ? "msg-error" : "msg-success";
+}
+
 
 async function init() {
     const hash = window.location.hash;
-    const msg = document.getElementById("msg");
-
-    // Función auxiliar para mostrar mensajes
-    function showMessage(text, isError = false) {
-        msg.textContent = isError ? "❌ " + text : "✅ " + text;
-        msg.className = isError ? "msg-error" : "msg-success";
-    }
 
     if (!hash) {
         showMessage("No se detectó enlace válido.", true);
@@ -167,37 +185,25 @@ async function init() {
         showMessage("El enlace es inválido o expiró.", true);
         return;
     }
-    
+
     // 👇 LÓGICA INTACTA
     const { error } = await supabaseClient.auth.setSession({ access_token, refresh_token });
     if (error) {
         showMessage("Error al iniciar sesión desde el enlace.", true);
         return;
     }
-
-    // Si la sesión es exitosa, se espera la nueva contraseña
-    // Limpiamos el mensaje si todo está bien inicialmente
-    msg.textContent = ""; 
-    msg.className = "";
 }
 
 init();
 
 async function cambiarPassword() {
     const nuevaPass = document.getElementById("nuevaPass").value;
-    const msg = document.getElementById("msg");
-
-    // Función auxiliar para mostrar mensajes
-    function showMessage(text, isError = false) {
-        msg.textContent = isError ? "❌ " + text : "✅ " + text;
-        msg.className = isError ? "msg-error" : "msg-success";
-    }
 
     if (!nuevaPass) {
         showMessage("Ingresa una nueva contraseña.", true);
         return;
     }
-    
+
     // 👇 LÓGICA INTACTA
     const { error } = await supabaseClient.auth.updateUser({ password: nuevaPass });
     if (error) {
@@ -205,10 +211,12 @@ async function cambiarPassword() {
         return;
     }
 
-    showMessage("Contraseña actualizada correctamente");
-    
-    // Opcional: Redirigir después de un tiempo
-    // setTimeout(() => { window.location.href = "index.html"; }, 3000);
+    showMessage("Contraseña actualizada correctamente.");
+}
+
+// Función para volver al login (LÓGICA INTACTA)
+function irLogin() {
+    window.location.href = "index.html";
 }
 </script>
 </body>
