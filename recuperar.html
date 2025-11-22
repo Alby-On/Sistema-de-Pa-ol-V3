@@ -64,31 +64,36 @@
     <p id="msg"></p>
   </div>
 
-  <script>
-const supabaseClient = supabase.createClient(
-    "https://jwcgiuhdugjunndfpdjr.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY"
-);
+<script>
+const SUPABASE_URL = "https://jwcgiuhdugjunndfpdjr.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3Y2dpdWhkdWdqdW5uZGZwZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTA2NTQsImV4cCI6MjA3ODUyNjY1NH0.llknOTpK1hFMDOjdyDUKUFuiyr0NwwJzNv6YdJbBsRY";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function enviarCorreo() {
-      const email = document.getElementById("email").value;
+async function enviarCorreo() {
+    const email = document.getElementById("correo").value;
+    const msg = document.getElementById("msg");
 
-      if (!email) {
-        document.getElementById("msg").innerText = "Ingresa un correo.";
+    if (!email) {
+        msg.textContent = "Ingresa tu correo.";
+        msg.style.color = "red";
         return;
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://tusitio.github.io/tu-proyecto/reset.html"
-      });
-
-      if (error) {
-        document.getElementById("msg").innerText = "Error: " + error.message;
-      } else {
-        document.getElementById("msg").innerText =
-          "Revisa tu correo para continuar con el cambio de contraseña.";
-      }
     }
-  </script>
+
+    // 🔥 Método compatible con Supabase v2 + CDN
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://alby-on.github.io/Sistema_panol_v3/reset.html"
+    });
+
+    if (error) {
+        msg.textContent = "Error: " + error.message;
+        msg.style.color = "red";
+        return;
+    }
+
+    msg.style.color = "green";
+    msg.textContent = "Correo enviado correctamente. Revisa tu bandeja.";
+}
+</script>
+
 </body>
 </html>
