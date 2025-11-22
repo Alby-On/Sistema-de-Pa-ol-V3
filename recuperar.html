@@ -83,10 +83,11 @@ async function enviarCorreo() {
     // 🔥 Método compatible 100% con CDN + Supabase v2
     const { data, error } = await supabaseClient.auth.signInWithOtp({
         email: email,
-        options: {
-            emailRedirectTo: "https://alby-on.github.io/Sistema_panol_v3/reset.html",
-            shouldCreateUser: false
-        }
+       options: {
+    emailRedirectTo: "https://alby-on.github.io/Sistema_panol_v3/reset.html",
+    shouldCreateUser: false,
+    flowType: "recovery"   // 🔥 NECESARIO
+}
     });
 
     if (error) {
